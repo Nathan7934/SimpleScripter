@@ -9,7 +9,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.util.ArrayList;
 
 public class AppFrame extends JFrame {
     /* The primary GUI frame. Every other component is a sub-component of this frame.
@@ -19,11 +18,11 @@ public class AppFrame extends JFrame {
 
     private SimpleCommands simple_coms = new SimpleCommands(ch);
     private ParameterCommands para_coms = new ParameterCommands(ch, this);
-    private CommandsList coms_list = new CommandsList(ch);
+    private CommandsList coms_list = new CommandsList(ch, this);
     private JLabel m_info = new JLabel("MP: (0,0)");
 
     public AppFrame(){
-        super("Autobot App Prototype");
+        super("SimpleScripter Prototype");
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600,400);
@@ -185,18 +184,21 @@ class ParameterCommands extends JPanel implements ActionListener{
         */
         JButton stim = (JButton) e.getSource();
 
-        if(stim == pkey_btn){
-            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, CommandHandler.PKEY_COM);
+        if (stim == pkey_btn) {
+            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, ch.PKEY_COM);
             kc.setVisible(true);
-        }else if(stim == hkey_btn){
-            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, CommandHandler.HKEY_COM);
+        } else if (stim == hkey_btn) {
+            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, ch.HKEY_COM);
             kc.setVisible(true);
-        }else if(stim == mm_btn){
-            dualIntCatcherDialog dic = new dualIntCatcherDialog(app_frame, ch, CommandHandler.MM_COM);
+        } else if (stim == mm_btn) {
+            dualIntCatcherDialog dic = new dualIntCatcherDialog(app_frame, ch, ch.MM_COM);
             dic.setVisible(true);
-        }else if(stim == wait_btn){
-            intCatcherDialog ic = new intCatcherDialog(app_frame, ch, CommandHandler.WAIT_COM);
+        } else if (stim == wait_btn) {
+            intCatcherDialog ic = new intCatcherDialog(app_frame, ch, ch.WAIT_COM);
             ic.setVisible(true);
+        } else {
+        	intCatcherDialog ic = new intCatcherDialog(app_frame, ch, ch.SLOOP_COM);
+        	ic.setVisible(true);
         }
     }
 }
@@ -207,6 +209,7 @@ class CommandsList extends JPanel implements ActionListener{
      */
 
     private CommandHandler ch;
+    private JFrame app_frame;
 
     private DefaultListModel list_model = new DefaultListModel();
     private JList q_lst = new JList(list_model);
@@ -218,8 +221,8 @@ class CommandsList extends JPanel implements ActionListener{
 
     private int curr_index = 0;
 
-    public CommandsList(CommandHandler command_handler){
-        this.ch = command_handler;
+    public CommandsList(CommandHandler command_handler, JFrame app_frame){
+        this.ch = command_handler; this.app_frame = app_frame;
 
         setBackground(new Color(204,204,204));
         setLayout(new GridBagLayout());
@@ -266,14 +269,19 @@ class CommandsList extends JPanel implements ActionListener{
     public void actionPerformed(ActionEvent e) {
         JButton stim = (JButton) e.getSource();
 
-        if(stim == up){
+        if (stim == up) {
             ch.swapUp(curr_index);
             swapUp(curr_index);
-        }else if(stim == down){
+        } else if (stim == down) {
             ch.swapDown(curr_index);
             swapDown(curr_index);
-        }else{
+        } else if (stim == del) {
             ch.delCommand(curr_index);
+        } else {
+			ExecutionLauncher il = new ExecutionLauncher(app_frame, ch);
+			il.setVisible(true);
+			Thread timer_thread = new Thread(new ExecutionTimer(il.getTimer(), il, ch));
+			timer_thread.start();
         }
     }
 
@@ -312,6 +320,28 @@ class CommandsList extends JPanel implements ActionListener{
     }
 }
 
+class ExecutionLauncher extends JDialog {
+	private JLabel warning = new JLabel("            Execution begins in:            ");
+	private JLabel timer = new JLabel("3");
+	private CommandHandler ch;
+
+	public ExecutionLauncher(JFrame app_frame, CommandHandler command_handler) {
+		super(app_frame, "");
+		this.ch = command_handler;
+		setSize(new Dimension(225, 125));
+		setLayout(new FlowLayout());
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		timer.setFont(new Font(timer.getFont().getName(), timer.getFont().getStyle(), 36));
+		add(warning);
+		add(timer);
+		setLocationRelativeTo(app_frame);
+		setResizable(false);
+	}
+
+	public JLabel getTimer() {
+		return timer;
+	}
+}
 
 class keyCatcherDialog extends JDialog implements KeyListener {
     /* A Dialog who's purpose is to wait for and collect a user input key.
@@ -361,7 +391,11 @@ class intCatcherDialog extends JDialog implements ActionListener{
         setFocusTraversalKeysEnabled(false);
         setSize(new Dimension(225, 125));
         setLayout(new FlowLayout());
-        if(command == CommandHandler.WAIT_COM){ instruction.setText("Enter the desired delay (ms): "); }
+        if (command == CommandHandler.WAIT_COM) {
+        	instruction.setText("Enter the desired delay (ms): ");
+        } else if (command == CommandHandler.SLOOP_COM) {
+        	instruction.setText("Enter the number of iterations: ");
+        }
         add(instruction);
         add(input);
         add(enter);
@@ -372,8 +406,8 @@ class intCatcherDialog extends JDialog implements ActionListener{
     }
 
     public void actionPerformed(ActionEvent e) {
-        if((StringUtils.isNumeric(input.getText())) && (StringUtils.isNotEmpty(input.getText()))){
-            ch.addCommand(command, Integer.parseInt(input.getText()));
+        if ((StringUtils.isNumeric(input.getText())) && (StringUtils.isNotEmpty(input.getText()))) {
+        	ch.addCommand(command, Integer.parseInt(input.getText()));
             dispose();
         }
     }
@@ -419,6 +453,28 @@ class dualIntCatcherDialog extends JDialog implements ActionListener{
     }
 }
 
+class ExecutionTimer implements Runnable {
+	private JLabel timer;
+	private JDialog warning_dialog;
+	private CommandHandler ch;
+	public ExecutionTimer(JLabel timer, JDialog warning_dialog, CommandHandler command_handler) {
+		this.timer = timer;
+		this.warning_dialog = warning_dialog;
+		this.ch = command_handler;
+	}
+	public void run() {
+		for (int i = 2; i >= 0; i--) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			timer.setText(String.valueOf(i));
+		}
+		warning_dialog.dispose();
+		ch.execute();
+	}
+}
 
 class MPThread implements Runnable{
     // A separate thread whose purpose is to continuously update the mouse pointer info on the frame.

@@ -1,3 +1,4 @@
+import org.apache.commons.lang3.StringUtils;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ public class CommandHandler {
     public static final String RKEY_COM = "Release Key ";
     public static final String WAIT_COM = "Wait ";
     public static final String MM_COM = "Move Mouse ";
-    public static final String SLOOP_COM = "Start Loop ";
+    public static final String SLOOP_COM = "Start Loop";
     public static final String ELOOP_COM = "End Loop";
 
     private AppFrame app_frame;
@@ -143,12 +144,68 @@ public class CommandHandler {
                 app_frame.addCommand(command + "(" + keyStrings.get(InfoInt) + ")");
                 app_frame.addCommand(RKEY_COM + "(" + keyStrings.get(InfoInt) + ")");
                 break;
+	        case SLOOP_COM:
+	        	String loop_count = String.format("%s %s", command, String.valueOf(InfoInt));
+                CQItem loopStart = new CQItem(loop_count);
+                CQItem loopEnd = new CQItem(ELOOP_COM);
+                loopStart.setPointer(loopEnd);
+                loopEnd.setPointer(loopStart);
+                queue.add(loopStart);
+                queue.add(loopEnd);
+                app_frame.addCommand(String.format("%s (%d)", command, InfoInt));
+                app_frame.addCommand(ELOOP_COM);
+	        	break;
             case WAIT_COM:
                 queue.add(new CQItem(command){ private final int time = InfoInt; public void execute(){ bot.wait(this.time); } } );
                 app_frame.addCommand(command + "(" + InfoInt + ")");
                 break;
         }
         if((InfoInt == -1) && (!command.equals(CLICKH_COM))) { app_frame.addCommand(command); } // Updates the list model on the GUI.
+    }
+
+    public void execute() {
+    	/* Executes the command sequence in the locally stored <queue> ArrayList. Uses a recursive algorithm structure
+    	to allow for nested loop functionality.*/
+	    app_frame.setTitle("Simple Scripter Prototype (Executing...)");
+
+		int index = 0;
+		CQItem item;
+		while (index < queue.size()) {
+			item = queue.get(index);
+			if (!item.getCommand().contains(SLOOP_COM)) {
+				item.execute();
+				index++;
+			} else {
+				// TODO: Add proper error handling
+				int repeats = Integer.parseInt(StringUtils.substringAfterLast(item.getCommand(), " "));
+				index += recursiveExecute(index + 1, repeats) + 2; // TODO: Check for off-by-one's
+			}
+		}
+
+	    app_frame.setTitle("Simple Scripter Prototype");
+    }
+
+    public int recursiveExecute(int start_index, int repeats) {
+		int comms_in_loop = 0, index;
+		CQItem item = queue.get(start_index);
+		for (int i = 0; i < repeats; i++) {
+			index = start_index;
+			while (!item.getCommand().equals(ELOOP_COM)) {
+				if (!item.getCommand().contains(SLOOP_COM)) {
+					item.execute();
+					index++;
+					if (i == 0) { comms_in_loop++; }
+				} else {
+					int new_repeats = Integer.parseInt(StringUtils.substringAfterLast(item.getCommand(), " "));
+					int increment = recursiveExecute(index + 1, new_repeats) + 2;
+					index += increment;
+					if (i == 0) { comms_in_loop += increment; }
+				}
+				item = queue.get(index);
+			}
+			item = queue.get(start_index);
+		}
+    	return comms_in_loop;
     }
 
     public void addCommand(String command, int x, int y){
