@@ -253,6 +253,15 @@ public class CommandHandler {
         }
     }
 
+    public int getPointerIndex(int index) {
+    	/* Return the index of the pointer for the CQItem at <index>. If the
+	       CQItem at <index> does not have a pointer, return -1. */
+    	CQItem pointer = queue.get(index).getPointerRef();
+    	if (pointer != null) {
+		    return queue.indexOf(pointer);
+	    }
+    	return -1;
+    }
 }
 
 class CQItem{

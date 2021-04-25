@@ -210,6 +210,7 @@ class CommandsList extends JPanel implements ActionListener{
 
     private CommandHandler ch;
     private JFrame app_frame;
+    private ListItem curr_pointed;
 
     private DefaultListModel list_model = new DefaultListModel();
     private JList q_lst = new JList(list_model);
@@ -223,6 +224,7 @@ class CommandsList extends JPanel implements ActionListener{
 
     public CommandsList(CommandHandler command_handler, JFrame app_frame){
         this.ch = command_handler; this.app_frame = app_frame;
+        this.curr_pointed = null;
 
         setBackground(new Color(204,204,204));
         setLayout(new GridBagLayout());
@@ -232,6 +234,7 @@ class CommandsList extends JPanel implements ActionListener{
         add(title_lbl, gc);
         gc.gridy = 1;
         q_lst.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        q_lst.setCellRenderer(new QueueListRenderer());
 
         JScrollPane q_pane = new JScrollPane(q_lst);
         q_pane.setPreferredSize(new Dimension(200, 300));
@@ -259,8 +262,11 @@ class CommandsList extends JPanel implements ActionListener{
         q_lst.addListSelectionListener(new ListSelectionListener(){
             // This listener is defined here as an anonymous inner class. Keeps track of which list item is selected.
             public void valueChanged(ListSelectionEvent e) {
-                if(!e.getValueIsAdjusting()) { // fixes bug where event fires multiple times with mouse click.
+                if(!e.getValueIsAdjusting() && q_lst.getSelectedIndex() != -1) { // fixes bug where event fires multiple times with mouse click.
+                	// for some reason, an action is caught when the del button is pressed. The -1 comparison fixes this...
+	                // should examine further.
                     curr_index = q_lst.getSelectedIndex();
+                    updatePointed();
                 }
             }
         });
@@ -285,7 +291,11 @@ class CommandsList extends JPanel implements ActionListener{
         }
     }
 
-    public void addToList(String command){ list_model.addElement(command); } // Add <command> to list model.
+	// Add <command> to list model.
+    public void addToList(String command){
+    	ListItem new_item = new ListItem(command);
+    	list_model.addElement(new_item);
+    }
 
     public void removeFromList(int index){
         // Removes command at <index> from the display. Also modifies the selection based on where <index> is.
@@ -293,34 +303,102 @@ class CommandsList extends JPanel implements ActionListener{
             list_model.remove(index);
             if (index < list_model.size()) {
                 q_lst.setSelectedIndex(index);
+                curr_index = index;
             } else {
                 q_lst.setSelectedIndex(index - 1);
+                curr_index = index-1;
             }
+            updatePointed();
         }
     }
 
     public void swapUp(int index){
         // Swaps element in list model at index <index> with element above it.
         if(index > 0){
-            String temp = (String) list_model.get(index-1);
+        	ListItem temp = (ListItem) list_model.get(index-1);
             list_model.set(index-1, list_model.get(index));
             list_model.set(index, temp);
             q_lst.setSelectedIndex(index-1);
+            curr_index = index-1;
+            updatePointed();
         }
     }
 
     public void swapDown(int index){
         // Swaps element in list model at index <index> with element below it.
         if(index < list_model.size()-1){
-            String temp = (String) list_model.get(index+1);
+	        ListItem temp = (ListItem) list_model.get(index+1);
             list_model.set(index+1, list_model.get(index));
             list_model.set(index, temp);
             q_lst.setSelectedIndex(index+1);
+            curr_index = index+1;
+            updatePointed();
         }
     }
+
+    public void updatePointed() {
+    	/* Updates the pointer information related to the selected ListItem.
+    	   This is important for the pair-highlighting functionality between
+    	   paired commands (such as loop and hold click). */
+	    if (curr_pointed != null) {
+		    curr_pointed.setPairIsSelected(false);
+	    }
+	    if (ch.getPointerIndex(curr_index) != -1) {
+		    ListItem pointed = (ListItem) list_model.get(ch.getPointerIndex(curr_index));
+		    pointed.setPairIsSelected(true);
+		    curr_pointed = pointed;
+	    }
+	    q_lst.repaint();
+    }
+
+	class QueueListRenderer extends JLabel implements ListCellRenderer {
+    	/* A custom list renderer. Using this to overwrite the default
+    	   list renderer allows us to change the background color for
+    	   specific elements in the list. */
+		public QueueListRenderer() {
+			setOpaque(true);
+		}
+
+		public Component getListCellRendererComponent(JList list, Object value, int index,
+		                                              boolean isSelected, boolean cellHasFocus) {
+			ListItem item = (ListItem) value;
+			setText(item.toString());
+			Color background;
+			if (isSelected) {
+				background = list.getSelectionBackground();
+			} else if (item.getPairIsSelected()) {
+				background = new Color(122, 203, 124, 191);
+			} else {
+				background = list.getBackground();
+			}
+			setBackground(background);
+			return this;
+		}
+	}
+
+	class ListItem {
+    	// list_model is composed of elements of this type. Used to store additional data.
+    	private String command;
+    	private boolean pairIsSelected;
+    	public ListItem(String command) {
+    		this.command = command;
+    		this.pairIsSelected = false;
+	    }
+	    public void setPairIsSelected(boolean val) {
+    		this.pairIsSelected = val;
+	    }
+	    public boolean getPairIsSelected() {
+    		return this.pairIsSelected;
+	    }
+	    public String toString() {
+    		return command;
+	    }
+	}
 }
 
 class ExecutionLauncher extends JDialog {
+	/* A window that appears after the user clicks the "execute" button. It displays a three
+    second countdown warning the user that execution is about to occur. */
 	private JLabel warning = new JLabel("            Execution begins in:            ");
 	private JLabel timer = new JLabel("3");
 	private CommandHandler ch;
