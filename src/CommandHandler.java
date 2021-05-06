@@ -226,12 +226,12 @@ public class CommandHandler {
     public void delCommand(int index){
         /* Deletes a command from the queue and updates the GUI. If the command being deleted is paired to another
         (i.e. "hold" commands), then deletes both queue items simultaneously. */
-        if(!queue.isEmpty()){
+        if (!queue.isEmpty() && index != -1) {
             CQItem item = queue.get(index);
             CQItem pointer = item.getPointerRef();
             app_frame.delCommand(index);
             queue.remove(index);
-            if(pointer != null) {
+            if (pointer != null) {
                 int pointer_index = queue.indexOf(pointer);
                 app_frame.delCommand(pointer_index);
                 queue.remove(pointer_index);

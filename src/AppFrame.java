@@ -309,8 +309,10 @@ class CommandsList extends JPanel implements ActionListener{
                 q_lst.setSelectedIndex(index - 1);
                 curr_index = index-1;
             }
-            indentNested();
-            updatePointed();
+            if (curr_index != -1) {
+	            indentNested();
+	            updatePointed();
+            }
         }
     }
 
@@ -357,6 +359,8 @@ class CommandsList extends JPanel implements ActionListener{
 
     public void indentNested() {
     	/* Adds indentation to nested loops in the list model. */
+	    // TODO Make it so that internal loops pair to the correct end loop command, otherwise it is up to the user to properly arrange start and end commands
+	    //     - Maybe add a scan check in "swap" methods (in CommandHandler) to properly assign pointers...
     	int nested_level = 0;
     	ListItem item;
     	for (int i = 0; i < list_model.size(); i++) {
