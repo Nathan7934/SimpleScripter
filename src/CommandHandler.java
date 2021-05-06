@@ -236,6 +236,7 @@ public class CommandHandler {
                 app_frame.delCommand(pointer_index);
                 queue.remove(pointer_index);
             }
+            repairPointers();
         }
     }
 
@@ -243,6 +244,7 @@ public class CommandHandler {
         // Swaps element in queue at index <index> with element above it.
         if(index > 0){
             Collections.swap(queue, index, index-1);
+	        repairPointers();
         }
     }
 
@@ -250,6 +252,7 @@ public class CommandHandler {
         // Swaps element in queue at index <index> with element below it.
         if(index < queue.size()-1){
             Collections.swap(queue, index, index+1);
+	        repairPointers();
         }
     }
 
@@ -261,6 +264,26 @@ public class CommandHandler {
 		    return queue.indexOf(pointer);
 	    }
     	return -1;
+    }
+
+    public void repairPointers() {
+    	/* Iterates through the queue and points start loop commands to their appropriate end loop commands based on
+    	their nested depth (in terms of nested loops). This prevents the user from inadvertently putting multiple start
+    	and end commands in improper order. */
+    	ArrayList<Integer> awaiting_pair = new ArrayList<Integer>();
+    	for (int i = 0; i < queue.size(); i++) {
+    		CQItem item = queue.get(i);
+    		if (item.getCommand().contains(SLOOP_COM)) {
+    			awaiting_pair.add(i);
+		    } else if (item.getCommand().contains(ELOOP_COM)) {
+    			// Precondition: If this condition is met, <awaiting_pair> should never be empty.
+			    int start_index = awaiting_pair.size() - 1;
+    			CQItem start_ptr = queue.get(awaiting_pair.get(start_index));
+    			item.setPointer(start_ptr);
+    			start_ptr.setPointer(item);
+    			awaiting_pair.remove(start_index);
+		    }
+	    }
     }
 }
 
