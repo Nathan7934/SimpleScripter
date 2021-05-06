@@ -295,6 +295,7 @@ class CommandsList extends JPanel implements ActionListener{
     public void addToList(String command){
     	ListItem new_item = new ListItem(command);
     	list_model.addElement(new_item);
+    	indentNested();
     }
 
     public void removeFromList(int index){
@@ -308,6 +309,7 @@ class CommandsList extends JPanel implements ActionListener{
                 q_lst.setSelectedIndex(index - 1);
                 curr_index = index-1;
             }
+            indentNested();
             updatePointed();
         }
     }
@@ -320,6 +322,7 @@ class CommandsList extends JPanel implements ActionListener{
             list_model.set(index, temp);
             q_lst.setSelectedIndex(index-1);
             curr_index = index-1;
+            indentNested();
             updatePointed();
         }
     }
@@ -332,6 +335,7 @@ class CommandsList extends JPanel implements ActionListener{
             list_model.set(index, temp);
             q_lst.setSelectedIndex(index+1);
             curr_index = index+1;
+            indentNested();
             updatePointed();
         }
     }
@@ -349,6 +353,29 @@ class CommandsList extends JPanel implements ActionListener{
 		    curr_pointed = pointed;
 	    }
 	    q_lst.repaint();
+    }
+
+    public void indentNested() {
+    	/* Adds indentation to nested loops in the list model. */
+    	int nested_level = 0;
+    	ListItem item;
+    	for (int i = 0; i < list_model.size(); i++) {
+    		item = (ListItem) list_model.get(i);
+    		item.setCommand(item.toString().trim()); // remove previous indent
+			if (item.toString().contains(ch.ELOOP_COM)) {
+				nested_level--;
+			}
+			String indent = "";
+			for (int j = 0; j < nested_level; j++) {
+				indent = indent + "   ";
+			}
+			item.setCommand(indent + item.toString());
+			list_model.set(i, item);
+		    if (item.toString().contains(ch.SLOOP_COM)) {
+			    nested_level++;
+		    }
+	    }
+    	q_lst.repaint();
     }
 
 	class QueueListRenderer extends JLabel implements ListCellRenderer {
@@ -386,6 +413,9 @@ class CommandsList extends JPanel implements ActionListener{
 	    }
 	    public void setPairIsSelected(boolean val) {
     		this.pairIsSelected = val;
+	    }
+	    public void setCommand(String command) {
+		    this.command = command;
 	    }
 	    public boolean getPairIsSelected() {
     		return this.pairIsSelected;

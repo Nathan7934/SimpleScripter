@@ -152,8 +152,8 @@ public class CommandHandler {
                 loopEnd.setPointer(loopStart);
                 queue.add(loopStart);
                 queue.add(loopEnd);
-                app_frame.addCommand(String.format("%s (%d)", command, InfoInt));
-                app_frame.addCommand(ELOOP_COM);
+                app_frame.addCommand(String.format("%s (%d) {", command, InfoInt));
+                app_frame.addCommand("} " + ELOOP_COM);
 	        	break;
             case WAIT_COM:
                 queue.add(new CQItem(command){ private final int time = InfoInt; public void execute(){ bot.wait(this.time); } } );
