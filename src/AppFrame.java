@@ -10,7 +10,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-public class AppFrame extends JFrame {
+public class AppFrame extends JFrame implements ActionListener{
     /* The primary GUI frame. Every other component is a sub-component of this frame.
     */
 
@@ -19,14 +19,18 @@ public class AppFrame extends JFrame {
     private SimpleCommands simple_coms = new SimpleCommands(ch);
     private ParameterCommands para_coms = new ParameterCommands(ch, this);
     private CommandsList coms_list = new CommandsList(ch, this);
+    private JButton menu;
+    private MenuList menu_list = new MenuList();
     private JLabel m_info = new JLabel("MP: (0,0)");
 
     public AppFrame(){
         super("SimpleScripter Prototype");
+
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600,400);
         setResizable(false);
+        menu = new JButton(new ImageIcon("./icons/menu.png"));
 
         setLayout(new GridBagLayout());
         GridBagConstraints gc = new GridBagConstraints();
@@ -36,6 +40,19 @@ public class AppFrame extends JFrame {
         gc.anchor = GridBagConstraints.LAST_LINE_START;
         gc.insets = new Insets(0,5,5,0);
         add(m_info, gc);
+
+        gc.anchor = GridBagConstraints.FIRST_LINE_START;
+        gc.insets = new Insets(0, 0, 0, 0);
+        menu.setPreferredSize(new Dimension(30, 30));
+        menu.setBorder(BorderFactory.createEmptyBorder());
+        menu.setBackground(new Color(238, 238, 238));
+        // Next 3 lines fix an obscure bug where clicking the menu button doesn't close the popup menu.
+        JComboBox prop = new JComboBox();
+        Object preventHide = prop.getClientProperty("doNotCancelPopup");
+        menu.putClientProperty("doNotCancelPopup", preventHide);
+        add(menu, gc);
+        menu.addActionListener(this);
+
         gc.gridx = 1; gc.gridy = 0; gc.weightx = 0.5; gc.weighty = 1.0; // Repeated assignments for sake of clarity.
         gc.anchor = GridBagConstraints.CENTER;
         gc.insets = new Insets(0,20,0,0);
@@ -55,6 +72,14 @@ public class AppFrame extends JFrame {
         m_thread.start();
     }
 
+    public void actionPerformed(ActionEvent e) {
+    	if (!menu_list.isVisible()) {
+		    menu_list.show(this, 39, 31); // Hardcoded values should be removed if window scaling is added
+	    } else {
+    		menu_list.setVisible(false);
+	    }
+	}
+
     public void addCommand(String command){
         coms_list.addToList(command);
     }
@@ -63,6 +88,40 @@ public class AppFrame extends JFrame {
 
 	public void setExecutionIndex(int index) {
     	coms_list.setExecutionIndex(index);
+	}
+
+	class MenuList extends JPopupMenu implements ActionListener{
+    	private JMenuItem save = new JMenuItem("Save");
+    	private JMenuItem load = new JMenuItem("Load");
+    	private JMenuItem settings = new JMenuItem("Settings");
+    	private JMenuItem about = new JMenuItem("About");
+    	public static final int WIDTH = 60;
+    	public static final int HEIGHT = 80;
+
+    	public MenuList() {
+    		setPopupSize(WIDTH, HEIGHT);
+    		add(save);
+    		add(load);
+    		add(settings);
+    		add(about);
+    		save.addActionListener(this);
+    		load.addActionListener(this);
+    		settings.addActionListener(this);
+    		about.addActionListener(this);
+	    }
+
+    	public void actionPerformed(ActionEvent e) {
+			JMenuItem stim = (JMenuItem) e.getSource();
+			if (stim == save) {
+				// TODO: Add save functionality
+			} else if (stim == load) {
+				// TODO: Add load functionality
+			} else if (stim == settings) {
+				// TODO: Add settings functionality
+			} else {
+				// TODO: Add about functionality
+			}
+	    }
 	}
 }
 
@@ -100,14 +159,14 @@ class SimpleCommands extends JPanel implements ActionListener{
         dclick_btn.setPreferredSize(size);
         add(dclick_btn, gc);
         gc.gridy = 3;
-        copy_btn.setPreferredSize(size);
-        add(copy_btn, gc);
-        gc.gridy = 4;
-        paste_btn.setPreferredSize(size);
-        add(paste_btn, gc);
-        gc.gridy = 5;
-        clickh_btn.setPreferredSize(size);
+	    clickh_btn.setPreferredSize(size);
         add(clickh_btn, gc);
+        gc.gridy = 4;
+	    copy_btn.setPreferredSize(size);
+        add(copy_btn, gc);
+        gc.gridy = 5;
+	    paste_btn.setPreferredSize(size);
+        add(paste_btn, gc);
         gc.insets = new Insets(3, 10, 8, 10);
 
         // Add actionListeners
@@ -143,6 +202,7 @@ class ParameterCommands extends JPanel implements ActionListener{
     private JButton hkey_btn = new JButton("Hold Key");
     private JButton mm_btn = new JButton("Move Mouse");
     private JButton wait_btn = new JButton("Wait");
+    private JButton rwait_btn = new JButton("Random Wait");
     private JButton loop_btn = new JButton("Loop");
 
     private CommandHandler ch;
@@ -171,9 +231,12 @@ class ParameterCommands extends JPanel implements ActionListener{
         loop_btn.setPreferredSize(size);
         add(loop_btn, gc);
         gc.gridy = 4;
-        gc.insets = new Insets(3, 10, 8, 10);
         wait_btn.setPreferredSize(size);
         add(wait_btn, gc);
+        gc.gridy = 5;
+	    gc.insets = new Insets(3, 10, 8, 10);
+        rwait_btn.setPreferredSize(size);
+        add(rwait_btn, gc);
 
         pkey_btn.addActionListener(this);
         hkey_btn.addActionListener(this);
@@ -636,5 +699,3 @@ class MPThread implements Runnable{
         }
     }
 }
-
-
