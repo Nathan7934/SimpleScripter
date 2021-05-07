@@ -60,6 +60,10 @@ public class AppFrame extends JFrame {
     }
 
     public void delCommand(int index){ coms_list.removeFromList(index);}
+
+	public void setExecutionIndex(int index) {
+    	coms_list.setExecutionIndex(index);
+	}
 }
 
 class SimpleCommands extends JPanel implements ActionListener{
@@ -211,6 +215,7 @@ class CommandsList extends JPanel implements ActionListener{
     private CommandHandler ch;
     private JFrame app_frame;
     private ListItem curr_pointed;
+    private boolean is_executing = false;
 
     private DefaultListModel list_model = new DefaultListModel();
     private JList q_lst = new JList(list_model);
@@ -380,6 +385,20 @@ class CommandsList extends JPanel implements ActionListener{
     	q_lst.repaint();
     }
 
+    public void setExecutionIndex (int index) {
+    	/* A method meant to be used during CommandHandler's execution process, selecting the item that is currently
+    	executing in the queue. Pass -1 when execution is finished. */
+    	if (index < 0 || index >= list_model.size()) {
+		    is_executing = false;
+    		q_lst.clearSelection();
+    		curr_index = -1;
+	    } else {
+    		is_executing = true;
+    		q_lst.setSelectedIndex(index);
+	    }
+    	q_lst.repaint();
+    }
+
 	class QueueListRenderer extends JLabel implements ListCellRenderer {
     	/* A custom list renderer. Using this to overwrite the default
     	   list renderer allows us to change the background color for
@@ -392,14 +411,21 @@ class CommandsList extends JPanel implements ActionListener{
 		                                              boolean isSelected, boolean cellHasFocus) {
 			ListItem item = (ListItem) value;
 			setText(item.toString());
-			Color background;
-			if (isSelected) {
-				background = list.getSelectionBackground();
-			} else if (item.getPairIsSelected()) {
-				background = new Color(122, 203, 124, 191);
+			Color background; Color foreground;
+			if (is_executing && isSelected) {
+				foreground = Color.WHITE;
+				background = Color.BLACK;
 			} else {
-				background = list.getBackground();
+				foreground = Color.BLACK;
+				if (isSelected) {
+					background = list.getSelectionBackground();
+				} else if (item.getPairIsSelected() && !is_executing) {
+					background = new Color(122, 203, 124, 191);
+				} else {
+					background = list.getBackground();
+				}
 			}
+			setForeground(foreground);
 			setBackground(background);
 			return this;
 		}

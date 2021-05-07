@@ -166,12 +166,13 @@ public class CommandHandler {
     public void execute() {
     	/* Executes the command sequence in the locally stored <queue> ArrayList. Uses a recursive algorithm structure
     	to allow for nested loop functionality.*/
-	    app_frame.setTitle("Simple Scripter Prototype (Executing...)");
+	    app_frame.setTitle("SimpleScripter Prototype (Executing...)");
 
 		int index = 0;
 		CQItem item;
 		while (index < queue.size()) {
 			item = queue.get(index);
+			app_frame.setExecutionIndex(index);
 			if (!item.getCommand().contains(SLOOP_COM)) {
 				item.execute();
 				index++;
@@ -182,7 +183,8 @@ public class CommandHandler {
 			}
 		}
 
-	    app_frame.setTitle("Simple Scripter Prototype");
+		app_frame.setExecutionIndex(-1);
+	    app_frame.setTitle("SimpleScripter Prototype");
     }
 
     public int recursiveExecute(int start_index, int repeats) {
@@ -190,6 +192,7 @@ public class CommandHandler {
 		CQItem item = queue.get(start_index);
 		for (int i = 0; i < repeats; i++) {
 			index = start_index;
+			app_frame.setExecutionIndex(start_index);
 			while (!item.getCommand().equals(ELOOP_COM)) {
 				if (!item.getCommand().contains(SLOOP_COM)) {
 					item.execute();
@@ -201,7 +204,9 @@ public class CommandHandler {
 					index += increment;
 					if (i == 0) { comms_in_loop += increment; }
 				}
+
 				item = queue.get(index);
+				app_frame.setExecutionIndex(index);
 			}
 			item = queue.get(start_index);
 		}
