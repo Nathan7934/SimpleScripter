@@ -1,14 +1,18 @@
 import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.*;
+import java.awt.font.TextAttribute;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class AppFrame extends JFrame implements ActionListener{
     /* The primary GUI frame. Every other component is a sub-component of this frame.
@@ -20,7 +24,7 @@ public class AppFrame extends JFrame implements ActionListener{
     private ParameterCommands para_coms = new ParameterCommands(ch, this);
     private CommandsList coms_list = new CommandsList(ch, this);
     private JButton menu;
-    private MenuList menu_list = new MenuList();
+    private MenuList menu_list = new MenuList(this);
     private JLabel m_info = new JLabel("MP: (0,0)");
 
     public AppFrame(){
@@ -62,10 +66,11 @@ public class AppFrame extends JFrame implements ActionListener{
         gc.insets = new Insets(0,0,0,0);
         add(coms_list, gc);
 
-        // Giving myself credit lmao
+        /*
         gc.gridx = 1; gc.anchor = GridBagConstraints.LAST_LINE_END;
         gc.insets = new Insets(0,0,5,1);
         add(new JLabel("By: Nathan Raymant"), gc);
+        */
 
         // Start thread that updates mouse position label.
         Thread m_thread = new Thread(new MPThread(m_info));
@@ -91,6 +96,7 @@ public class AppFrame extends JFrame implements ActionListener{
 	}
 
 	class MenuList extends JPopupMenu implements ActionListener{
+    	private JFrame app_frame;
     	private JMenuItem save = new JMenuItem("Save");
     	private JMenuItem load = new JMenuItem("Load");
     	private JMenuItem settings = new JMenuItem("Settings");
@@ -98,7 +104,8 @@ public class AppFrame extends JFrame implements ActionListener{
     	public static final int WIDTH = 60;
     	public static final int HEIGHT = 80;
 
-    	public MenuList() {
+    	public MenuList(JFrame app_frame) {
+    		this.app_frame = app_frame;
     		setPopupSize(WIDTH, HEIGHT);
     		add(save);
     		add(load);
@@ -119,8 +126,68 @@ public class AppFrame extends JFrame implements ActionListener{
 			} else if (stim == settings) {
 				// TODO: Add settings functionality
 			} else {
-				// TODO: Add about functionality
+				AboutDialog ad = new AboutDialog(app_frame);
+				ad.setVisible(true);
 			}
+	    }
+	}
+
+	class AboutDialog extends JDialog {
+    	/* A dialog window that appears when the user clicks the "about" option in the menu dropdown. Displays a
+    	brief description of the program along with a hyperlink to the source code repository. */
+    	public AboutDialog(JFrame app_frame) {
+		    super(app_frame, "About the Program");
+
+		    final String auth_text =
+		    "By: Nathan C. Raymant<br/>" +
+		    "Undergraduate student at the University of Toronto<br/>" +
+		    "May 2021";
+		    final JLabel auth = new JLabel("<html><div style='text-align: center;'>" + auth_text + "</div></html>");
+		    final String name_text = "<b>SimpleScripter</b>";
+		    final JLabel name = new JLabel("<html><div style='text-align: center;'>" + name_text + "</div></html>");
+		    final String body_text =
+		    "<br/>This program serves to act as a simple macro<br/>" +
+		    "scripting tool that can be used by anyone.<br/>" +
+		    "Emulate a variety of desktop inputs to create<br/>" +
+		    "your own automated sequences and let your<br/>" +
+		    "computer perform repetitive tasks on your behalf.<br/>" +
+		    "<br/>This is a publicly available portfolio piece.<br/>" +
+		    "To view the source code, visit:<br/>";
+		    final JLabel body = new JLabel("<html><div style='text-align: center;'>" + body_text + "</div></html>");
+
+    		setSize(325, 350);
+    		setLocationRelativeTo(app_frame);
+    		setResizable(false);
+    		setLayout(new FlowLayout());
+		    name.setFont(new Font(name.getFont().getName(), name.getFont().getStyle(), 28));
+		    name.setForeground(new Color(14, 6, 146));
+		    add(name);
+    		add(auth);
+    		add(body);
+
+    		// Add the GitHub hyperlink
+		    String github_text = "<div style='text-align: center;'>The GitHub Repository</div>";
+		    JLabel github = new JLabel("<html>" + github_text + "</html>");
+		    github.setForeground(Color.BLUE.darker());
+		    github.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		    github.setFont(new Font(github.getFont().getName(), github.getFont().getStyle(), 16));
+		    github.setBorder(new EmptyBorder(15, 10, 10, 10));
+		    github.addMouseListener(new MouseAdapter() {
+		    	public void mouseClicked(MouseEvent e) {
+					try {
+						Desktop.getDesktop().browse(new URI("https://github.com/Nathan7934/SimpleScripter"));
+					} catch (IOException | URISyntaxException err) {
+						err.printStackTrace();
+					}
+			    }
+			    public void mouseEntered(MouseEvent e) {
+					// TODO: Figure out how to get the github link to underline on hover. All solutions found do not
+				    // work for apparently no reason.
+			    }
+			    public void mouseExited(MouseEvent e) {
+			    }
+		    });
+		    add(github);
 	    }
 	}
 }
