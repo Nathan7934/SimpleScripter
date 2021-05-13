@@ -124,7 +124,8 @@ public class AppFrame extends JFrame implements ActionListener{
 			} else if (stim == load) {
 				// TODO: Add load functionality
 			} else if (stim == settings) {
-				// TODO: Add settings functionality
+				OptionsDialog od = new OptionsDialog(app_frame);
+				od.setVisible(true);
 			} else {
 				AboutDialog ad = new AboutDialog(app_frame);
 				ad.setVisible(true);
@@ -188,7 +189,70 @@ public class AppFrame extends JFrame implements ActionListener{
 			    }
 		    });
 		    add(github);
+
 	    }
+	}
+
+	class OptionsDialog extends JDialog implements ActionListener {
+		/*  Settings to add:
+		Execution:
+			- Set default delay between commands
+			- Set execution delay
+			- Minimize program on execution?
+		Utility:
+			- Show/hide advanced commands (Loop, random wait)?
+			- Manually enter move mouse coordinates?
+			- Set auto save interval
+		Appearance:
+			- Display Mouse Pointer Position?
+			- Display opened file name?
+		 */
+    	public OptionsDialog(JFrame app_frame) {
+    		super(app_frame, "Settings");
+		    setSize(325, 425);
+		    setLocationRelativeTo(app_frame);
+		    setResizable(false);
+		    SpringLayout layout = new SpringLayout();
+		    setLayout(layout);
+
+		    JLabel exec_lbl = new JLabel("Execution");
+		    exec_lbl.setForeground(new Color(84, 111, 156, 255));
+		    layout.putConstraint(SpringLayout.WEST, exec_lbl, 10, SpringLayout.WEST, this);
+		    layout.putConstraint(SpringLayout.NORTH, exec_lbl, 10, SpringLayout.NORTH, this);
+		    add(exec_lbl);
+		    JSeparator exec_sep = new JSeparator();
+		    exec_sep.setPreferredSize(new Dimension(225, 5));
+		    layout.putConstraint(SpringLayout.NORTH, exec_sep, 18, SpringLayout.NORTH, this);
+		    layout.putConstraint(SpringLayout.WEST, exec_sep, 5, SpringLayout.EAST, exec_lbl);
+		    add(exec_sep);
+
+		    JLabel dd_lbl = new JLabel("Delay between commands (ms):");
+		    layout.putConstraint(SpringLayout.WEST, dd_lbl, 10, SpringLayout.WEST, this);
+		    layout.putConstraint(SpringLayout.NORTH, dd_lbl, 10, SpringLayout.SOUTH, exec_lbl);
+		    add(dd_lbl);
+		    JTextField dd_field = new JTextField(7);
+		    layout.putConstraint(SpringLayout.WEST, dd_field, 15, SpringLayout.EAST, dd_lbl);
+		    layout.putConstraint(SpringLayout.NORTH, dd_field, 10, SpringLayout.SOUTH, exec_lbl);
+		    add(dd_field);
+
+		    JLabel ed_lbl = new JLabel("Execution delay (seconds):");
+		    layout.putConstraint(SpringLayout.WEST, ed_lbl, 10, SpringLayout.WEST, this);
+		    layout.putConstraint(SpringLayout.NORTH, ed_lbl, 7, SpringLayout.SOUTH, dd_lbl);
+		    add(ed_lbl);
+		    JTextField ed_field = new JTextField(7);
+		    layout.putConstraint(SpringLayout.WEST, ed_field, 0, SpringLayout.WEST, dd_field);
+		    layout.putConstraint(SpringLayout.NORTH, ed_field, 7, SpringLayout.SOUTH, dd_lbl);
+		    add(ed_field);
+
+		    JLabel min_lbl = new JLabel("Minimize program on execution:");
+		    layout.putConstraint(SpringLayout.WEST, min_lbl, 10, SpringLayout.WEST, this);
+		    layout.putConstraint(SpringLayout.NORTH, min_lbl, 7, SpringLayout.SOUTH, ed_lbl);
+		    add(min_lbl);
+	    }
+
+    	public void actionPerformed(ActionEvent e) {
+
+    	}
 	}
 }
 
