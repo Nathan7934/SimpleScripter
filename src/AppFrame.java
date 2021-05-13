@@ -7,12 +7,9 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.font.TextAttribute;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class AppFrame extends JFrame implements ActionListener{
     /* The primary GUI frame. Every other component is a sub-component of this frame.
@@ -124,7 +121,7 @@ public class AppFrame extends JFrame implements ActionListener{
 			} else if (stim == load) {
 				// TODO: Add load functionality
 			} else if (stim == settings) {
-				OptionsDialog od = new OptionsDialog(app_frame);
+				SettingsDialog od = new SettingsDialog(app_frame);
 				od.setVisible(true);
 			} else {
 				AboutDialog ad = new AboutDialog(app_frame);
@@ -193,44 +190,51 @@ public class AppFrame extends JFrame implements ActionListener{
 	    }
 	}
 
-	class OptionsDialog extends JDialog implements ActionListener {
-		/*  Settings to add:
-		Execution:
-			- Set default delay between commands
-			- Set execution delay
-			- Minimize program on execution?
-		Utility:
-			- Show/hide advanced commands (Loop, random wait)?
-			- Manually enter move mouse coordinates?
-			- Set auto save interval
-		Appearance:
-			- Display Mouse Pointer Position?
-			- Display opened file name?
-		 */
-    	public OptionsDialog(JFrame app_frame) {
+	class SettingsDialog extends JDialog implements ActionListener {
+		/*  A dialog that allows the user to adjust the settings of the program. Appears when the user selects the
+		'settings' menu option from the drop down. */
+
+		private JTextField ed_field;
+        private JTextField dd_field;
+        private JCheckBox min_chk;
+        private JTextField sas_field;
+        private JCheckBox sao_chk;
+        private JCheckBox mmc_chk;
+        private JCheckBox dpp_chk;
+        private JCheckBox dof_chk;
+        private JButton apply;
+        private JButton defaults;
+
+    	public SettingsDialog(JFrame app_frame) {
     		super(app_frame, "Settings");
-		    setSize(325, 425);
+		    setSize(325, 375);
 		    setLocationRelativeTo(app_frame);
 		    setResizable(false);
 		    SpringLayout layout = new SpringLayout();
 		    setLayout(layout);
 
+            // ================ EXECUTION SETTINGS ====================================
+            JSeparator exec_sep1 = new JSeparator();
+            exec_sep1.setPreferredSize(new Dimension(110, 5));
+            layout.putConstraint(SpringLayout.NORTH, exec_sep1, 18, SpringLayout.NORTH, this);
+            layout.putConstraint(SpringLayout.WEST, exec_sep1, 10, SpringLayout.WEST, this);
+            add(exec_sep1);
 		    JLabel exec_lbl = new JLabel("Execution");
 		    exec_lbl.setForeground(new Color(84, 111, 156, 255));
-		    layout.putConstraint(SpringLayout.WEST, exec_lbl, 10, SpringLayout.WEST, this);
+		    layout.putConstraint(SpringLayout.WEST, exec_lbl, 5, SpringLayout.EAST, exec_sep1);
 		    layout.putConstraint(SpringLayout.NORTH, exec_lbl, 10, SpringLayout.NORTH, this);
 		    add(exec_lbl);
-		    JSeparator exec_sep = new JSeparator();
-		    exec_sep.setPreferredSize(new Dimension(225, 5));
-		    layout.putConstraint(SpringLayout.NORTH, exec_sep, 18, SpringLayout.NORTH, this);
-		    layout.putConstraint(SpringLayout.WEST, exec_sep, 5, SpringLayout.EAST, exec_lbl);
-		    add(exec_sep);
+		    JSeparator exec_sep2 = new JSeparator();
+		    exec_sep2.setPreferredSize(new Dimension(110, 5));
+		    layout.putConstraint(SpringLayout.NORTH, exec_sep2, 18, SpringLayout.NORTH, this);
+		    layout.putConstraint(SpringLayout.WEST, exec_sep2, 5, SpringLayout.EAST, exec_lbl);
+		    add(exec_sep2);
 
 		    JLabel dd_lbl = new JLabel("Delay between commands (ms):");
 		    layout.putConstraint(SpringLayout.WEST, dd_lbl, 10, SpringLayout.WEST, this);
 		    layout.putConstraint(SpringLayout.NORTH, dd_lbl, 10, SpringLayout.SOUTH, exec_lbl);
 		    add(dd_lbl);
-		    JTextField dd_field = new JTextField(7);
+		    dd_field = new JTextField(7);
 		    layout.putConstraint(SpringLayout.WEST, dd_field, 15, SpringLayout.EAST, dd_lbl);
 		    layout.putConstraint(SpringLayout.NORTH, dd_field, 10, SpringLayout.SOUTH, exec_lbl);
 		    add(dd_field);
@@ -239,7 +243,7 @@ public class AppFrame extends JFrame implements ActionListener{
 		    layout.putConstraint(SpringLayout.WEST, ed_lbl, 10, SpringLayout.WEST, this);
 		    layout.putConstraint(SpringLayout.NORTH, ed_lbl, 7, SpringLayout.SOUTH, dd_lbl);
 		    add(ed_lbl);
-		    JTextField ed_field = new JTextField(7);
+		    ed_field = new JTextField(7);
 		    layout.putConstraint(SpringLayout.WEST, ed_field, 0, SpringLayout.WEST, dd_field);
 		    layout.putConstraint(SpringLayout.NORTH, ed_field, 7, SpringLayout.SOUTH, dd_lbl);
 		    add(ed_field);
@@ -248,7 +252,104 @@ public class AppFrame extends JFrame implements ActionListener{
 		    layout.putConstraint(SpringLayout.WEST, min_lbl, 10, SpringLayout.WEST, this);
 		    layout.putConstraint(SpringLayout.NORTH, min_lbl, 7, SpringLayout.SOUTH, ed_lbl);
 		    add(min_lbl);
-	    }
+		    min_chk = new JCheckBox();
+		    layout.putConstraint(SpringLayout.WEST, min_chk, 8, SpringLayout.EAST, min_lbl); // 8 or 38??
+		    layout.putConstraint(SpringLayout.NORTH, min_chk, 5, SpringLayout.SOUTH, ed_lbl);
+		    add(min_chk);
+
+		    // ========================== UTILITY SETTINGS ========================================
+            JSeparator util_sep1 = new JSeparator();
+            util_sep1.setPreferredSize(new Dimension(123, 5));
+            layout.putConstraint(SpringLayout.NORTH, util_sep1, 38, SpringLayout.NORTH, min_lbl);
+            layout.putConstraint(SpringLayout.WEST, util_sep1, 10, SpringLayout.WEST, this);
+            add(util_sep1);
+            JLabel util_lbl = new JLabel("Utility");
+            util_lbl.setForeground(new Color(84, 111, 156, 255));
+            layout.putConstraint(SpringLayout.WEST, util_lbl, 5, SpringLayout.EAST, util_sep1);
+            layout.putConstraint(SpringLayout.NORTH, util_lbl, 30, SpringLayout.NORTH, min_lbl);
+            add(util_lbl);
+            JSeparator util_sep2 = new JSeparator();
+            util_sep2.setPreferredSize(new Dimension(123, 5));
+            layout.putConstraint(SpringLayout.NORTH, util_sep2, 38, SpringLayout.NORTH, min_lbl);
+            layout.putConstraint(SpringLayout.WEST, util_sep2, 5, SpringLayout.EAST, util_lbl);
+            add(util_sep2);
+
+            JLabel sas_lbl = new JLabel("Autosave interval (minutes):");
+            layout.putConstraint(SpringLayout.WEST, sas_lbl, 10, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, sas_lbl, 10, SpringLayout.SOUTH, util_lbl);
+            add(sas_lbl);
+            sas_field = new JTextField(7);
+            layout.putConstraint(SpringLayout.WEST, sas_field, 0, SpringLayout.WEST, dd_field);
+            layout.putConstraint(SpringLayout.NORTH, sas_field, 10, SpringLayout.SOUTH, util_lbl);
+            add(sas_field);
+
+            JLabel sao_lbl = new JLabel("Show advanced options:");
+            layout.putConstraint(SpringLayout.WEST, sao_lbl, 10, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, sao_lbl, 7, SpringLayout.SOUTH, sas_lbl);
+            add(sao_lbl);
+            sao_chk = new JCheckBox();
+            layout.putConstraint(SpringLayout.WEST, sao_chk, 0, SpringLayout.WEST, min_chk);
+            layout.putConstraint(SpringLayout.NORTH, sao_chk, 5, SpringLayout.SOUTH, sas_lbl);
+            add(sao_chk);
+
+            JLabel mmc_lbl = new JLabel("Manually enter coordinates:");
+            layout.putConstraint(SpringLayout.WEST, mmc_lbl, 10, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, mmc_lbl, 7, SpringLayout.SOUTH, sao_lbl);
+            add(mmc_lbl);
+            mmc_chk = new JCheckBox();
+            layout.putConstraint(SpringLayout.WEST, mmc_chk, 0, SpringLayout.WEST, min_chk);
+            layout.putConstraint(SpringLayout.NORTH, mmc_chk, 5, SpringLayout.SOUTH, sao_lbl);
+            add(mmc_chk);
+
+            // ========================== APPEARANCE SETTINGS =================================
+            JSeparator aprnc_sep1 = new JSeparator();
+            aprnc_sep1.setPreferredSize(new Dimension(106, 5));
+            layout.putConstraint(SpringLayout.NORTH, aprnc_sep1, 38, SpringLayout.NORTH, mmc_lbl);
+            layout.putConstraint(SpringLayout.WEST, aprnc_sep1, 10, SpringLayout.WEST, this);
+            add(aprnc_sep1);
+            JLabel aprnc_lbl = new JLabel("Appearance");
+            aprnc_lbl.setForeground(new Color(84, 111, 156, 255));
+            layout.putConstraint(SpringLayout.WEST, aprnc_lbl, 5, SpringLayout.EAST, aprnc_sep1);
+            layout.putConstraint(SpringLayout.NORTH, aprnc_lbl, 30, SpringLayout.NORTH, mmc_lbl);
+            add(aprnc_lbl);
+            JSeparator aprnc_sep2 = new JSeparator();
+            aprnc_sep2.setPreferredSize(new Dimension(107, 5));
+            layout.putConstraint(SpringLayout.NORTH, aprnc_sep2, 38, SpringLayout.NORTH, mmc_lbl);
+            layout.putConstraint(SpringLayout.WEST, aprnc_sep2, 5, SpringLayout.EAST, aprnc_lbl);
+            add(aprnc_sep2);
+
+            JLabel dpp_lbl = new JLabel("Display pointer position:");
+            layout.putConstraint(SpringLayout.WEST, dpp_lbl, 10, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, dpp_lbl, 10, SpringLayout.SOUTH, aprnc_lbl);
+            add(dpp_lbl);
+            dpp_chk = new JCheckBox();
+            layout.putConstraint(SpringLayout.WEST, dpp_chk, 0, SpringLayout.WEST, min_chk);
+            layout.putConstraint(SpringLayout.NORTH, dpp_chk, 8, SpringLayout.SOUTH, aprnc_lbl);
+            add(dpp_chk);
+
+            JLabel dof_lbl = new JLabel("Display opened file name:"); // maybe make a dropdown option with options
+            // for always and only when working on a saved doc
+            layout.putConstraint(SpringLayout.WEST, dof_lbl, 10, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, dof_lbl, 7, SpringLayout.SOUTH, dpp_lbl);
+            add(dof_lbl);
+            dof_chk = new JCheckBox();
+            layout.putConstraint(SpringLayout.WEST, dof_chk, 0, SpringLayout.WEST, min_chk);
+            layout.putConstraint(SpringLayout.NORTH, dof_chk, 5, SpringLayout.SOUTH, dpp_lbl);
+            add(dof_chk);
+
+            // ===================== OTHER UI ELEMENTS ============================
+            apply = new JButton("Apply");
+            apply.setPreferredSize(new Dimension(70, 30));
+            layout.putConstraint(SpringLayout.WEST, apply, 232, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, apply, 300, SpringLayout.NORTH, this);
+            add(apply);
+
+            defaults = new JButton("Defaults");
+            defaults.setPreferredSize(new Dimension(85, 30));
+            layout.putConstraint(SpringLayout.WEST, defaults, 10, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, defaults, 300, SpringLayout.NORTH, this);
+            add(defaults);
+        }
 
     	public void actionPerformed(ActionEvent e) {
 
