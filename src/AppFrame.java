@@ -253,7 +253,7 @@ public class AppFrame extends JFrame implements ActionListener{
 		    layout.putConstraint(SpringLayout.NORTH, min_lbl, 7, SpringLayout.SOUTH, ed_lbl);
 		    add(min_lbl);
 		    min_chk = new JCheckBox();
-		    layout.putConstraint(SpringLayout.WEST, min_chk, 8, SpringLayout.EAST, min_lbl); // 8 or 38??
+		    layout.putConstraint(SpringLayout.WEST, min_chk, 12, SpringLayout.EAST, min_lbl); // 8 or 38??
 		    layout.putConstraint(SpringLayout.NORTH, min_chk, 5, SpringLayout.SOUTH, ed_lbl);
 		    add(min_chk);
 
