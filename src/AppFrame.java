@@ -3,6 +3,8 @@ import org.apache.commons.lang3.StringUtils;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
@@ -24,9 +26,23 @@ public class AppFrame extends JFrame implements ActionListener{
     private MenuList menu_list = new MenuList(this);
     private JLabel m_info = new JLabel("MP: (0,0)");
 
-    public AppFrame(){
+    private int[] settings; // An array for storing the user's settings.
+    // Boolean settings, like 'display pointer position', are stored as 1's (true) and 0's (false)
+    // Declaration of settings array indices as constants:
+    public static int INTERCOM_DELAY = 0, EXEC_DELAY = 1, MIN_ON_EXEC = 2, AUTOSAVE_INTERVAL = 3, SHOW_ADVANCED = 4,
+    MANUAL_COORDS = 5, DISPLAY_POS = 6, DISPLAY_FILE = 7;
+    private static int[] DEFAULT_SETTINGS = new int[]{300, 3, 0, 15, 0, 0, 0, 1};
+
+    public AppFrame() {
         super("SimpleScripter Prototype");
 
+        // Settings configuration
+        this.settings = DEFAULT_SETTINGS; // These are the defaults. Order of settings in array
+        //  correlates to the order in which the private settings variables are declared in SettingsDialog.
+        // TODO: Make it so that the user's settings persist when the program closes
+        applySettings();
+
+        // UI Configuration
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600,400);
@@ -63,12 +79,6 @@ public class AppFrame extends JFrame implements ActionListener{
         gc.insets = new Insets(0,0,0,0);
         add(coms_list, gc);
 
-        /*
-        gc.gridx = 1; gc.anchor = GridBagConstraints.LAST_LINE_END;
-        gc.insets = new Insets(0,0,5,1);
-        add(new JLabel("By: Nathan Raymant"), gc);
-        */
-
         // Start thread that updates mouse position label.
         Thread m_thread = new Thread(new MPThread(m_info));
         m_thread.start();
@@ -91,6 +101,17 @@ public class AppFrame extends JFrame implements ActionListener{
 	public void setExecutionIndex(int index) {
     	coms_list.setExecutionIndex(index);
 	}
+
+	public void applySettings() {
+        // Apply's the settings based on their values in the settings array.
+        // TODO: Implement
+    }
+
+    public int getSettingVal(int index) {
+        // Gets a setting's value from the settings array. Takes the index of value in the array. Index should be passed
+        // using the defined static constants.
+        return settings[index];
+    }
 
 	class MenuList extends JPopupMenu implements ActionListener{
     	private JFrame app_frame;
@@ -194,14 +215,14 @@ public class AppFrame extends JFrame implements ActionListener{
 		/*  A dialog that allows the user to adjust the settings of the program. Appears when the user selects the
 		'settings' menu option from the drop down. */
 
-		private JTextField ed_field;
-        private JTextField dd_field;
-        private JCheckBox min_chk;
-        private JTextField sas_field;
-        private JCheckBox sao_chk;
-        private JCheckBox mmc_chk;
-        private JCheckBox dpp_chk;
-        private JCheckBox dof_chk;
+		private JTextField dd_field; // Inter-command delay (millisecond)
+        private JTextField ed_field; // Execution delay (seconds)
+        private JCheckBox min_chk; // minimize program on execution
+        private JTextField sas_field; // autosave interval (minutes)
+        private JCheckBox sao_chk; // show advanced options
+        private JCheckBox mmc_chk; // manually set mouse coords
+        private JCheckBox dpp_chk; // display pointer position
+        private JCheckBox dof_chk; // display open file name
         private JButton apply;
         private JButton defaults;
 
@@ -237,6 +258,7 @@ public class AppFrame extends JFrame implements ActionListener{
 		    dd_field = new JTextField(7);
 		    layout.putConstraint(SpringLayout.WEST, dd_field, 15, SpringLayout.EAST, dd_lbl);
 		    layout.putConstraint(SpringLayout.NORTH, dd_field, 10, SpringLayout.SOUTH, exec_lbl);
+		    dd_field.getDocument().addDocumentListener(new TextChangedListener());
 		    add(dd_field);
 
 		    JLabel ed_lbl = new JLabel("Execution delay (seconds):");
@@ -246,6 +268,7 @@ public class AppFrame extends JFrame implements ActionListener{
 		    ed_field = new JTextField(7);
 		    layout.putConstraint(SpringLayout.WEST, ed_field, 0, SpringLayout.WEST, dd_field);
 		    layout.putConstraint(SpringLayout.NORTH, ed_field, 7, SpringLayout.SOUTH, dd_lbl);
+		    ed_field.getDocument().addDocumentListener(new TextChangedListener());
 		    add(ed_field);
 
 		    JLabel min_lbl = new JLabel("Minimize program on execution:");
@@ -255,6 +278,7 @@ public class AppFrame extends JFrame implements ActionListener{
 		    min_chk = new JCheckBox();
 		    layout.putConstraint(SpringLayout.WEST, min_chk, 12, SpringLayout.EAST, min_lbl); // 8 or 38??
 		    layout.putConstraint(SpringLayout.NORTH, min_chk, 5, SpringLayout.SOUTH, ed_lbl);
+		    min_chk.addActionListener(this);
 		    add(min_chk);
 
 		    // ========================== UTILITY SETTINGS ========================================
@@ -281,6 +305,7 @@ public class AppFrame extends JFrame implements ActionListener{
             sas_field = new JTextField(7);
             layout.putConstraint(SpringLayout.WEST, sas_field, 0, SpringLayout.WEST, dd_field);
             layout.putConstraint(SpringLayout.NORTH, sas_field, 10, SpringLayout.SOUTH, util_lbl);
+            sas_field.getDocument().addDocumentListener(new TextChangedListener());
             add(sas_field);
 
             JLabel sao_lbl = new JLabel("Show advanced options:");
@@ -290,6 +315,7 @@ public class AppFrame extends JFrame implements ActionListener{
             sao_chk = new JCheckBox();
             layout.putConstraint(SpringLayout.WEST, sao_chk, 0, SpringLayout.WEST, min_chk);
             layout.putConstraint(SpringLayout.NORTH, sao_chk, 5, SpringLayout.SOUTH, sas_lbl);
+            sao_chk.addActionListener(this);
             add(sao_chk);
 
             JLabel mmc_lbl = new JLabel("Manually enter coordinates:");
@@ -299,6 +325,7 @@ public class AppFrame extends JFrame implements ActionListener{
             mmc_chk = new JCheckBox();
             layout.putConstraint(SpringLayout.WEST, mmc_chk, 0, SpringLayout.WEST, min_chk);
             layout.putConstraint(SpringLayout.NORTH, mmc_chk, 5, SpringLayout.SOUTH, sao_lbl);
+            mmc_chk.addActionListener(this);
             add(mmc_chk);
 
             // ========================== APPEARANCE SETTINGS =================================
@@ -325,6 +352,7 @@ public class AppFrame extends JFrame implements ActionListener{
             dpp_chk = new JCheckBox();
             layout.putConstraint(SpringLayout.WEST, dpp_chk, 0, SpringLayout.WEST, min_chk);
             layout.putConstraint(SpringLayout.NORTH, dpp_chk, 8, SpringLayout.SOUTH, aprnc_lbl);
+            dpp_chk.addActionListener(this);
             add(dpp_chk);
 
             JLabel dof_lbl = new JLabel("Display opened file name:"); // maybe make a dropdown option with options
@@ -335,6 +363,7 @@ public class AppFrame extends JFrame implements ActionListener{
             dof_chk = new JCheckBox();
             layout.putConstraint(SpringLayout.WEST, dof_chk, 0, SpringLayout.WEST, min_chk);
             layout.putConstraint(SpringLayout.NORTH, dof_chk, 5, SpringLayout.SOUTH, dpp_lbl);
+            dof_chk.addActionListener(this);
             add(dof_chk);
 
             // ===================== OTHER UI ELEMENTS ============================
@@ -342,18 +371,75 @@ public class AppFrame extends JFrame implements ActionListener{
             apply.setPreferredSize(new Dimension(70, 30));
             layout.putConstraint(SpringLayout.WEST, apply, 232, SpringLayout.WEST, this);
             layout.putConstraint(SpringLayout.NORTH, apply, 300, SpringLayout.NORTH, this);
+            apply.setEnabled(false);
+            apply.addActionListener(this);
             add(apply);
 
             defaults = new JButton("Defaults");
             defaults.setPreferredSize(new Dimension(85, 30));
             layout.putConstraint(SpringLayout.WEST, defaults, 10, SpringLayout.WEST, this);
             layout.putConstraint(SpringLayout.NORTH, defaults, 300, SpringLayout.NORTH, this);
+            defaults.addActionListener(this);
             add(defaults);
         }
 
     	public void actionPerformed(ActionEvent e) {
-
+            Object stim = e.getSource();
+            if (stim instanceof JButton) {
+                if (stim == apply) {
+                    applySettings();
+                    apply.setEnabled(false);
+                } else {
+                    setDefaultFields();
+                    apply.setEnabled(true);
+                }
+            } else {
+                apply.setEnabled(true);
+            }
     	}
+
+    	public void setDefaultFields() {
+            dd_field.setText(Integer.toString(DEFAULT_SETTINGS[INTERCOM_DELAY]));
+            ed_field.setText(Integer.toString(DEFAULT_SETTINGS[EXEC_DELAY]));
+            sas_field.setText(Integer.toString(DEFAULT_SETTINGS[AUTOSAVE_INTERVAL]));
+            if (DEFAULT_SETTINGS[MIN_ON_EXEC] == 1) {
+                min_chk.setSelected(true);
+            } else {
+                min_chk.setSelected(false);
+            }
+            if (DEFAULT_SETTINGS[SHOW_ADVANCED] == 1) {
+                sao_chk.setSelected(true);
+            } else {
+                sao_chk.setSelected(false);
+            }
+            if (DEFAULT_SETTINGS[MANUAL_COORDS] == 1) {
+                mmc_chk.setSelected(true);
+            } else {
+                mmc_chk.setSelected(false);
+            }
+            if (DEFAULT_SETTINGS[DISPLAY_POS] == 1) {
+                dpp_chk.setVisible(true);
+            } else {
+                dpp_chk.setVisible(false);
+            }
+            if (DEFAULT_SETTINGS[DISPLAY_FILE] == 1) {
+                dof_chk.setSelected(true);
+            } else {
+                dof_chk.setSelected(false);
+            }
+        }
+
+    	class TextChangedListener implements DocumentListener {
+            public void insertUpdate(DocumentEvent e) {
+                apply.setEnabled(true);
+            }
+            public void removeUpdate(DocumentEvent e) {
+                apply.setEnabled(true);
+            }
+            public void changedUpdate(DocumentEvent e) {
+                apply.setEnabled(true);
+            }
+        }
 	}
 }
 
