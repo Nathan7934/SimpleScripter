@@ -12,6 +12,7 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 
 public class AppFrame extends JFrame implements ActionListener{
     /* The primary GUI frame. Every other component is a sub-component of this frame.
@@ -37,7 +38,7 @@ public class AppFrame extends JFrame implements ActionListener{
         super("SimpleScripter Prototype");
 
         // Settings configuration
-        this.settings = DEFAULT_SETTINGS; // These are the defaults. Order of settings in array
+        this.settings = Arrays.copyOf(DEFAULT_SETTINGS, 8); // These are the defaults. Order of settings in array
         //  correlates to the order in which the private settings variables are declared in SettingsDialog.
         // TODO: Make it so that the user's settings persist when the program closes
         applySettings();
@@ -226,6 +227,9 @@ public class AppFrame extends JFrame implements ActionListener{
         private JButton apply;
         private JButton defaults;
 
+        private boolean monitoring; // variable to prevent JTextFields' DocumentListener from triggering during the
+		// build phase of the dialog.
+
     	public SettingsDialog(JFrame app_frame) {
     		super(app_frame, "Settings");
 		    setSize(325, 375);
@@ -233,6 +237,7 @@ public class AppFrame extends JFrame implements ActionListener{
 		    setResizable(false);
 		    SpringLayout layout = new SpringLayout();
 		    setLayout(layout);
+		    this.monitoring = false;
 
             // ================ EXECUTION SETTINGS ====================================
             JSeparator exec_sep1 = new JSeparator();
@@ -258,7 +263,7 @@ public class AppFrame extends JFrame implements ActionListener{
 		    dd_field = new JTextField(7);
 		    layout.putConstraint(SpringLayout.WEST, dd_field, 15, SpringLayout.EAST, dd_lbl);
 		    layout.putConstraint(SpringLayout.NORTH, dd_field, 10, SpringLayout.SOUTH, exec_lbl);
-		    dd_field.getDocument().addDocumentListener(new TextChangedListener());
+		    dd_field.getDocument().addDocumentListener(new TextChangedListener(this));
 		    add(dd_field);
 
 		    JLabel ed_lbl = new JLabel("Execution delay (seconds):");
@@ -268,7 +273,7 @@ public class AppFrame extends JFrame implements ActionListener{
 		    ed_field = new JTextField(7);
 		    layout.putConstraint(SpringLayout.WEST, ed_field, 0, SpringLayout.WEST, dd_field);
 		    layout.putConstraint(SpringLayout.NORTH, ed_field, 7, SpringLayout.SOUTH, dd_lbl);
-		    ed_field.getDocument().addDocumentListener(new TextChangedListener());
+		    ed_field.getDocument().addDocumentListener(new TextChangedListener(this));
 		    add(ed_field);
 
 		    JLabel min_lbl = new JLabel("Minimize program on execution:");
@@ -305,7 +310,7 @@ public class AppFrame extends JFrame implements ActionListener{
             sas_field = new JTextField(7);
             layout.putConstraint(SpringLayout.WEST, sas_field, 0, SpringLayout.WEST, dd_field);
             layout.putConstraint(SpringLayout.NORTH, sas_field, 10, SpringLayout.SOUTH, util_lbl);
-            sas_field.getDocument().addDocumentListener(new TextChangedListener());
+            sas_field.getDocument().addDocumentListener(new TextChangedListener(this));
             add(sas_field);
 
             JLabel sao_lbl = new JLabel("Show advanced options:");
@@ -381,6 +386,9 @@ public class AppFrame extends JFrame implements ActionListener{
             layout.putConstraint(SpringLayout.NORTH, defaults, 300, SpringLayout.NORTH, this);
             defaults.addActionListener(this);
             add(defaults);
+
+            updateSettingsDisplay("current");
+            monitoring = true;
         }
 
     	public void actionPerformed(ActionEvent e) {
@@ -389,55 +397,58 @@ public class AppFrame extends JFrame implements ActionListener{
                 if (stim == apply) {
                     applySettings();
                     apply.setEnabled(false);
-                } else {
-                    setDefaultFields();
+                } else if (stim == defaults) {
+                    updateSettingsDisplay("default");
                     apply.setEnabled(true);
                 }
-            } else {
+            } else if (stim instanceof JCheckBox){
                 apply.setEnabled(true);
             }
     	}
 
-    	public void setDefaultFields() {
-            dd_field.setText(Integer.toString(DEFAULT_SETTINGS[INTERCOM_DELAY]));
-            ed_field.setText(Integer.toString(DEFAULT_SETTINGS[EXEC_DELAY]));
-            sas_field.setText(Integer.toString(DEFAULT_SETTINGS[AUTOSAVE_INTERVAL]));
-            if (DEFAULT_SETTINGS[MIN_ON_EXEC] == 1) {
-                min_chk.setSelected(true);
-            } else {
-                min_chk.setSelected(false);
-            }
-            if (DEFAULT_SETTINGS[SHOW_ADVANCED] == 1) {
-                sao_chk.setSelected(true);
-            } else {
-                sao_chk.setSelected(false);
-            }
-            if (DEFAULT_SETTINGS[MANUAL_COORDS] == 1) {
-                mmc_chk.setSelected(true);
-            } else {
-                mmc_chk.setSelected(false);
-            }
-            if (DEFAULT_SETTINGS[DISPLAY_POS] == 1) {
-                dpp_chk.setVisible(true);
-            } else {
-                dpp_chk.setVisible(false);
-            }
-            if (DEFAULT_SETTINGS[DISPLAY_FILE] == 1) {
-                dof_chk.setSelected(true);
-            } else {
-                dof_chk.setSelected(false);
-            }
+        public void updateSettingsDisplay(String to_what) {
+    		/* This method is meant to either display the current settings when the settings dialog is opened, or
+    		display the default settings when the 'Defaults' button is clicked. The parameter <to_what> should be either
+    		"default" or "current" to determine which functionality is employed. */
+    		JTextField[] field_settings = new JTextField[] {dd_field, ed_field, sas_field};
+    		JCheckBox[] chkbox_settings = new JCheckBox[] {min_chk, sao_chk, mmc_chk, dpp_chk, dof_chk};
+    		int field_index = 0, chkbox_index = 0;
+    		for (int i = 0; i < (field_settings.length + chkbox_settings.length); i++) {
+    			if (i == INTERCOM_DELAY || i == EXEC_DELAY || i == AUTOSAVE_INTERVAL) {
+				    if (to_what.equals("default")) {
+					    field_settings[field_index].setText(Integer.toString(DEFAULT_SETTINGS[i]));
+				    } else {
+					    field_settings[field_index].setText(Integer.toString(getSettingVal(i)));
+					    field_index++;
+				    }
+			    } else {
+				    if (to_what.equals("default")) {
+					    chkbox_settings[chkbox_index].setSelected(DEFAULT_SETTINGS[i] == 1);
+				    } else {
+					    chkbox_settings[chkbox_index].setSelected(getSettingVal(i) == 1);
+				    }
+				    chkbox_index++;
+			    }
+		    }
+        }
+
+        public boolean isMonitoring() {
+    		return monitoring;
         }
 
     	class TextChangedListener implements DocumentListener {
+    		private SettingsDialog sd;
+    		public TextChangedListener (SettingsDialog sd) {
+    			this.sd = sd;
+		    }
             public void insertUpdate(DocumentEvent e) {
-                apply.setEnabled(true);
+    			if (sd.isMonitoring()) { apply.setEnabled(true); }
             }
             public void removeUpdate(DocumentEvent e) {
-                apply.setEnabled(true);
+	            if (sd.isMonitoring()) { apply.setEnabled(true); }
             }
             public void changedUpdate(DocumentEvent e) {
-                apply.setEnabled(true);
+	            if (sd.isMonitoring()) { apply.setEnabled(true); }
             }
         }
 	}
