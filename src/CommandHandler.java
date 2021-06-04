@@ -275,7 +275,7 @@ public class CommandHandler {
     	/* Iterates through the queue and points start loop commands to their appropriate end loop commands based on
     	their nested depth (in terms of nested loops). This prevents the user from inadvertently putting multiple start
     	and end commands in improper order. */
-    	ArrayList<Integer> awaiting_pair = new ArrayList<Integer>();
+    	ArrayList<Integer> awaiting_pair = new ArrayList<>();
     	for (int i = 0; i < queue.size(); i++) {
     		CQItem item = queue.get(i);
     		if (item.getCommand().contains(SLOOP_COM)) {
@@ -289,6 +289,10 @@ public class CommandHandler {
     			awaiting_pair.remove(start_index);
 		    }
 	    }
+    }
+
+    public void setDelay(int delay) {
+    	bot.setDelay(delay);
     }
 }
 

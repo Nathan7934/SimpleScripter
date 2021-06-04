@@ -22,7 +22,7 @@ public class AppFrame extends JFrame implements ActionListener{
 
     private SimpleCommands simple_coms = new SimpleCommands(ch);
     private ParameterCommands para_coms = new ParameterCommands(ch, this);
-    private CommandsList coms_list = new CommandsList(ch, this);
+    private CommandsList coms_list;
     private JButton menu;
     private MenuList menu_list = new MenuList(this);
     private JLabel m_info = new JLabel("MP: (0,0)");
@@ -30,7 +30,7 @@ public class AppFrame extends JFrame implements ActionListener{
     private int[] settings; // An array for storing the user's settings.
     // Boolean settings, like 'display pointer position', are stored as 1's (true) and 0's (false)
     // Declaration of settings array indices as constants:
-    public static int INTERCOM_DELAY = 0, EXEC_DELAY = 1, MIN_ON_EXEC = 2, AUTOSAVE_INTERVAL = 3, SHOW_ADVANCED = 4,
+    public static final int INTERCOM_DELAY = 0, EXEC_DELAY = 1, MIN_ON_EXEC = 2, AUTOSAVE_INTERVAL = 3, SHOW_ADVANCED = 4,
     MANUAL_COORDS = 5, DISPLAY_POS = 6, DISPLAY_FILE = 7;
     private static int[] DEFAULT_SETTINGS = new int[]{300, 3, 0, 15, 0, 0, 0, 1};
 
@@ -41,7 +41,6 @@ public class AppFrame extends JFrame implements ActionListener{
         this.settings = Arrays.copyOf(DEFAULT_SETTINGS, 8); // These are the defaults. Order of settings in array
         //  correlates to the order in which the private settings variables are declared in SettingsDialog.
         // TODO: Make it so that the user's settings persist when the program closes
-        applySettings();
 
         // UI Configuration
         setVisible(true);
@@ -78,7 +77,10 @@ public class AppFrame extends JFrame implements ActionListener{
         gc.gridx = 2; gc.gridy = 0; gc.weightx = 1.0; gc.weighty = 1.0;
         gc.anchor = GridBagConstraints.LINE_END;
         gc.insets = new Insets(0,0,0,0);
+        coms_list = new CommandsList(ch, this, getSettingVal(EXEC_DELAY));
         add(coms_list, gc);
+
+	    applySettings(this.settings);
 
         // Start thread that updates mouse position label.
         Thread m_thread = new Thread(new MPThread(m_info));
@@ -103,9 +105,44 @@ public class AppFrame extends JFrame implements ActionListener{
     	coms_list.setExecutionIndex(index);
 	}
 
-	public void applySettings() {
-        // Apply's the settings based on their values in the settings array.
-        // TODO: Implement
+	public void applySettings(int[] new_settings) {
+        // Applies the settings based on their values in the settings array.
+		for (int val = 0; val < settings.length; val++) {
+			switch(val) {
+				case INTERCOM_DELAY:
+					settings[INTERCOM_DELAY] = new_settings[INTERCOM_DELAY];
+					ch.setDelay(new_settings[INTERCOM_DELAY]);
+					break;
+				case EXEC_DELAY:
+					settings[EXEC_DELAY] = new_settings[EXEC_DELAY];
+					coms_list.setExecutionDelay(new_settings[EXEC_DELAY]);
+					break;
+				case MIN_ON_EXEC:
+					// TODO: Implement
+
+					break;
+				case AUTOSAVE_INTERVAL:
+					// TODO: Implement
+
+					break;
+				case SHOW_ADVANCED:
+					// TODO: Implement
+
+					break;
+				case MANUAL_COORDS:
+					// TODO: Implement
+
+					break;
+				case DISPLAY_POS:
+					// TODO: Implement
+
+					break;
+				case DISPLAY_FILE:
+					// TODO: Implement
+
+					break;
+			}
+		}
     }
 
     public int getSettingVal(int index) {
@@ -229,6 +266,9 @@ public class AppFrame extends JFrame implements ActionListener{
 
         private boolean monitoring; // variable to prevent JTextFields' DocumentListener from triggering during the
 		// build phase of the dialog.
+
+		private JTextField[] field_settings;
+		private JCheckBox[] chkbox_settings;
 
     	public SettingsDialog(JFrame app_frame) {
     		super(app_frame, "Settings");
@@ -387,6 +427,8 @@ public class AppFrame extends JFrame implements ActionListener{
             defaults.addActionListener(this);
             add(defaults);
 
+		    field_settings = new JTextField[] {dd_field, ed_field, sas_field};
+		    chkbox_settings = new JCheckBox[] {min_chk, sao_chk, mmc_chk, dpp_chk, dof_chk};
             updateSettingsDisplay("current");
             monitoring = true;
         }
@@ -395,7 +437,7 @@ public class AppFrame extends JFrame implements ActionListener{
             Object stim = e.getSource();
             if (stim instanceof JButton) {
                 if (stim == apply) {
-                    applySettings();
+                    applySettings(generateSettingsFromFields());
                     apply.setEnabled(false);
                 } else if (stim == defaults) {
                     updateSettingsDisplay("default");
@@ -406,12 +448,33 @@ public class AppFrame extends JFrame implements ActionListener{
             }
     	}
 
+    	public int[] generateSettingsFromFields() {
+    		// Generates and returns a settings array based on the current field values in the settings dialog
+		    // Return value should be used as an argument for applySettings().
+    		int total_len = field_settings.length + chkbox_settings.length;
+    		int[] new_settings = new int[total_len];
+		    int field_index = 0, chkbox_index = 0;
+		    for (int i = 0; i < total_len; i++) {
+			    if (i == INTERCOM_DELAY || i == EXEC_DELAY || i == AUTOSAVE_INTERVAL) {
+			    	new_settings[i] = Integer.parseInt(field_settings[field_index].getText());
+			    	field_index++;
+			    } else {
+			    	boolean val = chkbox_settings[chkbox_index].isSelected();
+			    	if (val) {
+			    		new_settings[i] = 1;
+				    } else {
+			    		new_settings[i] = 0;
+				    }
+			    	chkbox_index++;
+			    }
+		    }
+		    return new_settings;
+	    }
+
         public void updateSettingsDisplay(String to_what) {
     		/* This method is meant to either display the current settings when the settings dialog is opened, or
     		display the default settings when the 'Defaults' button is clicked. The parameter <to_what> should be either
     		"default" or "current" to determine which functionality is employed. */
-    		JTextField[] field_settings = new JTextField[] {dd_field, ed_field, sas_field};
-    		JCheckBox[] chkbox_settings = new JCheckBox[] {min_chk, sao_chk, mmc_chk, dpp_chk, dof_chk};
     		int field_index = 0, chkbox_index = 0;
     		for (int i = 0; i < (field_settings.length + chkbox_settings.length); i++) {
     			if (i == INTERCOM_DELAY || i == EXEC_DELAY || i == AUTOSAVE_INTERVAL) {
@@ -419,8 +482,8 @@ public class AppFrame extends JFrame implements ActionListener{
 					    field_settings[field_index].setText(Integer.toString(DEFAULT_SETTINGS[i]));
 				    } else {
 					    field_settings[field_index].setText(Integer.toString(getSettingVal(i)));
-					    field_index++;
 				    }
+				    field_index++;
 			    } else {
 				    if (to_what.equals("default")) {
 					    chkbox_settings[chkbox_index].setSelected(DEFAULT_SETTINGS[i] == 1);
@@ -608,6 +671,7 @@ class CommandsList extends JPanel implements ActionListener{
     private JFrame app_frame;
     private ListItem curr_pointed;
     private boolean is_executing = false;
+    private int exec_delay;
 
     private DefaultListModel list_model = new DefaultListModel();
     private JList q_lst = new JList(list_model);
@@ -619,9 +683,10 @@ class CommandsList extends JPanel implements ActionListener{
 
     private int curr_index = 0;
 
-    public CommandsList(CommandHandler command_handler, JFrame app_frame){
+    public CommandsList(CommandHandler command_handler, JFrame app_frame, int exec_delay){
         this.ch = command_handler; this.app_frame = app_frame;
         this.curr_pointed = null;
+        this.exec_delay = exec_delay;
 
         setBackground(new Color(204,204,204));
         setLayout(new GridBagLayout());
@@ -669,6 +734,8 @@ class CommandsList extends JPanel implements ActionListener{
         });
     }
 
+
+
     public void actionPerformed(ActionEvent e) {
         JButton stim = (JButton) e.getSource();
 
@@ -683,7 +750,7 @@ class CommandsList extends JPanel implements ActionListener{
         } else {
 			ExecutionLauncher il = new ExecutionLauncher(app_frame, ch);
 			il.setVisible(true);
-			Thread timer_thread = new Thread(new ExecutionTimer(il.getTimer(), il, ch));
+			Thread timer_thread = new Thread(new ExecutionTimer(il.getTimer(), il, ch, exec_delay));
 			timer_thread.start();
         }
     }
@@ -791,6 +858,10 @@ class CommandsList extends JPanel implements ActionListener{
     	q_lst.repaint();
     }
 
+    public void setExecutionDelay(int exec_delay) {
+    	this.exec_delay = exec_delay;
+    }
+
 	class QueueListRenderer extends JLabel implements ListCellRenderer {
     	/* A custom list renderer. Using this to overwrite the default
     	   list renderer allows us to change the background color for
@@ -850,7 +921,7 @@ class ExecutionLauncher extends JDialog {
 	/* A window that appears after the user clicks the "execute" button. It displays a three
     second countdown warning the user that execution is about to occur. */
 	private JLabel warning = new JLabel("            Execution begins in:            ");
-	private JLabel timer = new JLabel("3");
+	private JLabel timer = new JLabel("");
 	private CommandHandler ch;
 
 	public ExecutionLauncher(JFrame app_frame, CommandHandler command_handler) {
@@ -985,13 +1056,16 @@ class ExecutionTimer implements Runnable {
 	private JLabel timer;
 	private JDialog warning_dialog;
 	private CommandHandler ch;
-	public ExecutionTimer(JLabel timer, JDialog warning_dialog, CommandHandler command_handler) {
+	private int delay;
+	public ExecutionTimer(JLabel timer, JDialog warning_dialog, CommandHandler command_handler, int delay) {
 		this.timer = timer;
 		this.warning_dialog = warning_dialog;
 		this.ch = command_handler;
+		this.delay = delay;
 	}
 	public void run() {
-		for (int i = 2; i >= 0; i--) {
+		timer.setText(String.valueOf(delay));
+		for (int i = delay-1; i >= 0; i--) {
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
