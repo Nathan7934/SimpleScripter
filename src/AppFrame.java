@@ -677,9 +677,9 @@ class CommandsList extends JPanel implements ActionListener{
     private JList q_lst = new JList(list_model);
     private JLabel title_lbl = new JLabel("Queued Commands");
     private JButton exe_btn = new JButton("Execute");
-    private JButton up = new JButton();
-    private JButton down = new JButton();
-    private JButton del = new JButton();
+    private JButton up;
+    private JButton down;
+    private JButton del;
 
     private int curr_index = 0;
 
@@ -705,15 +705,24 @@ class CommandsList extends JPanel implements ActionListener{
         exe_btn.setPreferredSize(new Dimension(100, 40));
         add(exe_btn, gc);
 
-        gc.insets = new Insets(0, 5,0,0);
+        gc.insets = new Insets(0, 15,0,0);
         gc.anchor = GridBagConstraints.FIRST_LINE_START;
+        up = new JButton(new ImageIcon("./icons/up.png"));
+	    up.setBorder(BorderFactory.createEmptyBorder());
+	    up.setBackground(new Color(204, 204, 204));
         up.setPreferredSize(new Dimension(20,20));
         add(up, gc);
         gc.anchor = GridBagConstraints.LAST_LINE_START;
+        down = new JButton(new ImageIcon("./icons/down.png"));
+	    down.setBorder(BorderFactory.createEmptyBorder());
+	    down.setBackground(new Color(204, 204, 204));
         down.setPreferredSize(new Dimension(20,20));
         add(down, gc);
-        gc.insets = new Insets(0, 0, 0, 5);
+        gc.insets = new Insets(0, 0, 0, 15);
         gc.anchor = GridBagConstraints.LINE_END;
+        del = new JButton(new ImageIcon("./icons/delete.png"));
+	    del.setBorder(BorderFactory.createEmptyBorder());
+	    del.setBackground(new Color(204, 204, 204));
         del.setPreferredSize(new Dimension(20,20));
         add(del, gc);
 
