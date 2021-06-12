@@ -118,8 +118,8 @@ public class AppFrame extends JFrame implements ActionListener{
 					coms_list.setExecutionDelay(new_settings[EXEC_DELAY]);
 					break;
 				case MIN_ON_EXEC:
-					// TODO: Implement
-
+					settings[MIN_ON_EXEC] = new_settings[MIN_ON_EXEC];
+					ch.setMinOnExec(new_settings[MIN_ON_EXEC] == 1);
 					break;
 				case AUTOSAVE_INTERVAL:
 					// TODO: Implement
@@ -437,8 +437,11 @@ public class AppFrame extends JFrame implements ActionListener{
             Object stim = e.getSource();
             if (stim instanceof JButton) {
                 if (stim == apply) {
-                    applySettings(generateSettingsFromFields());
-                    apply.setEnabled(false);
+                	int[] new_settings = generateSettingsFromFields();
+                	if (new_settings != null) {
+                		applySettings(new_settings);
+		                apply.setEnabled(false);
+	                }
                 } else if (stim == defaults) {
                     updateSettingsDisplay("default");
                     apply.setEnabled(true);
@@ -448,7 +451,7 @@ public class AppFrame extends JFrame implements ActionListener{
             }
     	}
 
-    	public int[] generateSettingsFromFields() {
+    	private int[] generateSettingsFromFields() {
     		// Generates and returns a settings array based on the current field values in the settings dialog
 		    // Return value should be used as an argument for applySettings().
     		int total_len = field_settings.length + chkbox_settings.length;
@@ -456,7 +459,11 @@ public class AppFrame extends JFrame implements ActionListener{
 		    int field_index = 0, chkbox_index = 0;
 		    for (int i = 0; i < total_len; i++) {
 			    if (i == INTERCOM_DELAY || i == EXEC_DELAY || i == AUTOSAVE_INTERVAL) {
-			    	new_settings[i] = Integer.parseInt(field_settings[field_index].getText());
+			    	String field_text = field_settings[field_index].getText();
+			    	if (!StringUtils.isNumeric(field_text)) {
+			    		return null;
+				    }
+			    	new_settings[i] = Integer.parseInt(field_text);
 			    	field_index++;
 			    } else {
 			    	boolean val = chkbox_settings[chkbox_index].isSelected();
@@ -776,13 +783,12 @@ class CommandsList extends JPanel implements ActionListener{
         if(!list_model.isEmpty()) {
             list_model.remove(index);
             if (index < list_model.size()) {
-                q_lst.setSelectedIndex(index);
-                curr_index = index;
+	            curr_index = index;
             } else {
-                q_lst.setSelectedIndex(index - 1);
-                curr_index = index-1;
+	            curr_index = index-1;
             }
-            if (curr_index != -1) {
+	        q_lst.setSelectedIndex(curr_index);
+	        if (curr_index != -1) {
 	            indentNested();
 	            updatePointed();
             }
@@ -822,8 +828,9 @@ class CommandsList extends JPanel implements ActionListener{
 	    if (curr_pointed != null) {
 		    curr_pointed.setPairIsSelected(false);
 	    }
-	    if (ch.getPointerIndex(curr_index) != -1) {
-		    ListItem pointed = (ListItem) list_model.get(ch.getPointerIndex(curr_index));
+	    int pointer_index = ch.getPointerIndex(curr_index);
+	    if (pointer_index > -1 && pointer_index < list_model.size()) {
+		    ListItem pointed = (ListItem) list_model.get(pointer_index);
 		    pointed.setPairIsSelected(true);
 		    curr_pointed = pointed;
 	    }
@@ -994,7 +1001,7 @@ class intCatcherDialog extends JDialog implements ActionListener{
     private String command;
 
     public intCatcherDialog(JFrame app_frame, CommandHandler command_handler, String command){
-        super(app_frame, "Int Catcher");
+        super(app_frame, "");
         this.ch = command_handler; this.command = command;
         setFocusTraversalKeysEnabled(false);
         setSize(new Dimension(225, 125));
@@ -1014,7 +1021,7 @@ class intCatcherDialog extends JDialog implements ActionListener{
     }
 
     public void actionPerformed(ActionEvent e) {
-        if ((StringUtils.isNumeric(input.getText())) && (StringUtils.isNotEmpty(input.getText()))) {
+        if (StringUtils.isNumeric(input.getText())) {
         	ch.addCommand(command, Integer.parseInt(input.getText()));
             dispose();
         }
@@ -1034,7 +1041,7 @@ class dualIntCatcherDialog extends JDialog implements ActionListener{
     private String command;
 
     public dualIntCatcherDialog(JFrame app_frame, CommandHandler command_handler, String command){
-        super(app_frame, "Dual Int Catcher");
+        super(app_frame, "");
         this.ch = command_handler; this.command = command;
         setFocusTraversalKeysEnabled(false);
         setSize(new Dimension(225, 125));
@@ -1054,7 +1061,8 @@ class dualIntCatcherDialog extends JDialog implements ActionListener{
     public void actionPerformed(ActionEvent e) {
         String x_val = x_input.getText();
         String y_val = y_input.getText();
-        if ((StringUtils.isNumeric(x_val)) && (StringUtils.isNotEmpty(x_val)) && (StringUtils.isNumeric(y_val)) && (StringUtils.isNotEmpty(y_val))){
+        String can_contain = "-0123456789";
+        if (StringUtils.containsOnly(x_val, can_contain) && StringUtils.containsOnly(y_val, can_contain)){
             ch.addCommand(command, Integer.parseInt(x_val), Integer.parseInt(y_val));
             dispose();
         }

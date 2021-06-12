@@ -1,4 +1,6 @@
 import org.apache.commons.lang3.StringUtils;
+
+import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -22,6 +24,8 @@ public class CommandHandler {
     public static final String MM_COM = "Move Mouse ";
     public static final String SLOOP_COM = "Start Loop";
     public static final String ELOOP_COM = "End Loop";
+
+	private boolean min_on_exec = false;
 
     private AppFrame app_frame;
     private BotFunctions bot = new BotFunctions();
@@ -167,6 +171,9 @@ public class CommandHandler {
     	/* Executes the command sequence in the locally stored <queue> ArrayList. Uses a recursive algorithm structure
     	to allow for nested loop functionality.*/
 	    app_frame.setTitle("SimpleScripter Prototype (Executing...)");
+	    if (min_on_exec) {
+	    	app_frame.setState(Frame.ICONIFIED);
+	    }
 
 		int index = 0;
 		CQItem item;
@@ -185,6 +192,9 @@ public class CommandHandler {
 
 		app_frame.setExecutionIndex(-1);
 	    app_frame.setTitle("SimpleScripter Prototype");
+	    if (min_on_exec) {
+	    	app_frame.setState(Frame.NORMAL);
+	    }
     }
 
     public int recursiveExecute(int start_index, int repeats) {
@@ -293,6 +303,10 @@ public class CommandHandler {
 
     public void setDelay(int delay) {
     	bot.setDelay(delay);
+    }
+
+    public void setMinOnExec(boolean val) {
+    	this.min_on_exec = val;
     }
 }
 
