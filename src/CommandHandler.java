@@ -6,6 +6,7 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class CommandHandler {
 
@@ -21,6 +22,7 @@ public class CommandHandler {
     public static final String HKEY_COM = "Hold Key ";
     public static final String RKEY_COM = "Release Key ";
     public static final String WAIT_COM = "Wait ";
+    public static final String RWAIT_COM = "Random Wait ";
     public static final String MM_COM = "Move Mouse ";
     public static final String SLOOP_COM = "Start Loop";
     public static final String ELOOP_COM = "End Loop";
@@ -223,18 +225,28 @@ public class CommandHandler {
     	return comms_in_loop;
     }
 
-    public void addCommand(String command, int x, int y){
+    public void addCommand(String command, int left, int right){
         /* An addCommand override that takes two inputs. Meant to be used for adding move mouse commands, but could
-        potentially handle other future commands that might take two integer parameters.*/
-        if(command == MM_COM){
-            queue.add(new CQItem(command){
-               private final int x_coord = x;
-               private final int y_coord = y;
+        potentially handle other future commands that might take two integer parameters.
+        Added functionality to include random wait command.*/
+        if(command.equals(MM_COM)) {
+            queue.add(new CQItem(command) {
+               private final int x_coord = left;
+               private final int y_coord = right;
                public void execute(){
                    bot.moveMouse(this.x_coord, this.y_coord);
                }
             });
-            app_frame.addCommand(String.format("%s(%d,%d)", command, x, y));
+            app_frame.addCommand(String.format("%s(%d,%d)", command, left, right));
+        } else if (command.equals(RWAIT_COM)) {
+	        queue.add(new CQItem(command) {
+		        private final int lower = left;
+		        private final int upper = right;
+		        public void execute(){
+			        bot.randomWait(this.lower, this.upper);
+		        }
+	        });
+	        app_frame.addCommand(String.format("%s(%d-%d)", command, left, right));
         }
     }
 

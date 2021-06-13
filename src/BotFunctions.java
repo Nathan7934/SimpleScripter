@@ -1,4 +1,6 @@
 import java.awt.Robot;
+import java.util.concurrent.ThreadLocalRandom;
+
 public class BotFunctions {
     private Robot robot;
 
@@ -121,6 +123,11 @@ public class BotFunctions {
         }catch(Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void randomWait(int lower, int upper) {
+    	int rwait_time = ThreadLocalRandom.current().nextInt(lower, upper + 1);
+		robot.delay(rwait_time);
     }
 
     public void setDelay(int ms) {

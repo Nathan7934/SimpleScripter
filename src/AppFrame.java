@@ -126,16 +126,16 @@ public class AppFrame extends JFrame implements ActionListener{
 
 					break;
 				case SHOW_ADVANCED:
-					// TODO: Implement
-
+					settings[SHOW_ADVANCED] = new_settings[SHOW_ADVANCED];
+					para_coms.showAdvancedOptions(new_settings[SHOW_ADVANCED] == 1);
 					break;
 				case MANUAL_COORDS:
 					// TODO: Implement
 
 					break;
 				case DISPLAY_POS:
-					// TODO: Implement
-
+					settings[DISPLAY_POS] = new_settings[DISPLAY_POS];
+					m_info.setVisible(new_settings[DISPLAY_POS] == 1);
 					break;
 				case DISPLAY_FILE:
 					// TODO: Implement
@@ -642,6 +642,7 @@ class ParameterCommands extends JPanel implements ActionListener{
         mm_btn.addActionListener(this);
         loop_btn.addActionListener(this);
         wait_btn.addActionListener(this);
+        rwait_btn.addActionListener(this);
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -651,22 +652,30 @@ class ParameterCommands extends JPanel implements ActionListener{
         JButton stim = (JButton) e.getSource();
 
         if (stim == pkey_btn) {
-            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, ch.PKEY_COM);
+            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, CommandHandler.PKEY_COM);
             kc.setVisible(true);
         } else if (stim == hkey_btn) {
-            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, ch.HKEY_COM);
+            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, CommandHandler.HKEY_COM);
             kc.setVisible(true);
         } else if (stim == mm_btn) {
-            dualIntCatcherDialog dic = new dualIntCatcherDialog(app_frame, ch, ch.MM_COM);
+            dualIntCatcherDialog dic = new dualIntCatcherDialog(app_frame, ch, CommandHandler.MM_COM);
             dic.setVisible(true);
         } else if (stim == wait_btn) {
-            intCatcherDialog ic = new intCatcherDialog(app_frame, ch, ch.WAIT_COM);
+            intCatcherDialog ic = new intCatcherDialog(app_frame, ch, CommandHandler.WAIT_COM);
             ic.setVisible(true);
-        } else {
-        	intCatcherDialog ic = new intCatcherDialog(app_frame, ch, ch.SLOOP_COM);
+        } else if (stim == loop_btn){
+        	intCatcherDialog ic = new intCatcherDialog(app_frame, ch, CommandHandler.SLOOP_COM);
         	ic.setVisible(true);
+        } else {
+        	dualIntCatcherDialog dic = new dualIntCatcherDialog(app_frame, ch, CommandHandler.RWAIT_COM);
+        	dic.setVisible(true);
         }
     }
+
+	public void showAdvancedOptions(boolean val) {
+		loop_btn.setVisible(val);
+		rwait_btn.setVisible(val);
+	}
 }
 
 class CommandsList extends JPanel implements ActionListener{
@@ -1006,9 +1015,9 @@ class intCatcherDialog extends JDialog implements ActionListener{
         setFocusTraversalKeysEnabled(false);
         setSize(new Dimension(225, 125));
         setLayout(new FlowLayout());
-        if (command == CommandHandler.WAIT_COM) {
+        if (command.equals(CommandHandler.WAIT_COM)) {
         	instruction.setText("Enter the desired delay (ms): ");
-        } else if (command == CommandHandler.SLOOP_COM) {
+        } else if (command.equals(CommandHandler.SLOOP_COM)) {
         	instruction.setText("Enter the number of iterations: ");
         }
         add(instruction);
@@ -1031,11 +1040,11 @@ class intCatcherDialog extends JDialog implements ActionListener{
 class dualIntCatcherDialog extends JDialog implements ActionListener{
     /* A Dialog who's purpose is to take a user input of two integers (via input text fields).
     Main usage is only planned for move mouse command (for getting coords).*/
-    private JLabel instruction = new JLabel("               Enter coordinates:               "); //TODO: Stop being super lazy about layouts lol
-    private JLabel x_lbl = new JLabel("x: ");
-    private JLabel y_lbl = new JLabel(" y: ");
-    private JTextField x_input = new JTextField(6);
-    private JTextField y_input = new JTextField(6);
+    private JLabel instruction;
+    private JLabel left_lbl;
+    private JLabel right_lbl;
+    private JTextField left_field = new JTextField(6);
+    private JTextField right_field = new JTextField(6);
     private JButton enter = new JButton("Enter");
     private CommandHandler ch;
     private String command;
@@ -1044,26 +1053,37 @@ class dualIntCatcherDialog extends JDialog implements ActionListener{
         super(app_frame, "");
         this.ch = command_handler; this.command = command;
         setFocusTraversalKeysEnabled(false);
-        setSize(new Dimension(225, 125));
-        setLayout(new FlowLayout());
+
+        if (command.equals(CommandHandler.MM_COM)) {
+	        setSize(new Dimension(225, 125));
+        	instruction = new JLabel("               Enter coordinates:               ");
+	        left_lbl = new JLabel("x: ");
+	        right_lbl = new JLabel(" y: ");
+        } else {
+	        setSize(new Dimension(275, 125));
+	        instruction = new JLabel("             Enter random wait bounds (ms):             ");
+	        left_lbl = new JLabel("lower: ");
+	        right_lbl = new JLabel(" upper: ");
+        }
+
+	    setLayout(new FlowLayout());
         add(instruction);
-        add(x_lbl);
-        add(x_input);
-        add(y_lbl);
-        add(y_input);
+        add(left_lbl);
+        add(left_field);
+        add(right_lbl);
+        add(right_field);
         add(enter);
         setLocationRelativeTo(app_frame);
         setResizable(false);
-
         enter.addActionListener(this);
     }
 
     public void actionPerformed(ActionEvent e) {
-        String x_val = x_input.getText();
-        String y_val = y_input.getText();
+        String left_val = left_field.getText();
+        String right_val = right_field.getText();
         String can_contain = "-0123456789";
-        if (StringUtils.containsOnly(x_val, can_contain) && StringUtils.containsOnly(y_val, can_contain)){
-            ch.addCommand(command, Integer.parseInt(x_val), Integer.parseInt(y_val));
+        if (StringUtils.containsOnly(left_val, can_contain) && StringUtils.containsOnly(right_val, can_contain)){
+            ch.addCommand(command, Integer.parseInt(left_val), Integer.parseInt(right_val));
             dispose();
         }
     }
