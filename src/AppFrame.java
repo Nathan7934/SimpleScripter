@@ -130,8 +130,8 @@ public class AppFrame extends JFrame implements ActionListener{
 					para_coms.showAdvancedOptions(new_settings[SHOW_ADVANCED] == 1);
 					break;
 				case MANUAL_COORDS:
-					// TODO: Implement
-
+					settings[MANUAL_COORDS] = new_settings[MANUAL_COORDS];
+					para_coms.setManualMouseCoords(new_settings[MANUAL_COORDS] == 1);
 					break;
 				case DISPLAY_POS:
 					settings[DISPLAY_POS] = new_settings[DISPLAY_POS];
@@ -604,6 +604,8 @@ class ParameterCommands extends JPanel implements ActionListener{
     private JButton rwait_btn = new JButton("Random Wait");
     private JButton loop_btn = new JButton("Loop");
 
+    private boolean manual_mmc = false; // Determines whether mouse coordinates should be entered manually
+
     private CommandHandler ch;
     private JFrame app_frame;
 
@@ -652,22 +654,27 @@ class ParameterCommands extends JPanel implements ActionListener{
         JButton stim = (JButton) e.getSource();
 
         if (stim == pkey_btn) {
-            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, CommandHandler.PKEY_COM);
+            KeyCatcherDialog kc = new KeyCatcherDialog(app_frame, ch, CommandHandler.PKEY_COM);
             kc.setVisible(true);
         } else if (stim == hkey_btn) {
-            keyCatcherDialog kc = new keyCatcherDialog(app_frame, ch, CommandHandler.HKEY_COM);
+            KeyCatcherDialog kc = new KeyCatcherDialog(app_frame, ch, CommandHandler.HKEY_COM);
             kc.setVisible(true);
         } else if (stim == mm_btn) {
-            dualIntCatcherDialog dic = new dualIntCatcherDialog(app_frame, ch, CommandHandler.MM_COM);
-            dic.setVisible(true);
+        	if (manual_mmc) {
+		        DualIntCatcherDialog dic = new DualIntCatcherDialog(app_frame, ch, CommandHandler.MM_COM);
+		        dic.setVisible(true);
+	        } else {
+		        KeyCatcherDialog kc = new KeyCatcherDialog(app_frame, ch, CommandHandler.MM_COM);
+		        kc.setVisible(true);
+	        }
         } else if (stim == wait_btn) {
-            intCatcherDialog ic = new intCatcherDialog(app_frame, ch, CommandHandler.WAIT_COM);
+            IntCatcherDialog ic = new IntCatcherDialog(app_frame, ch, CommandHandler.WAIT_COM);
             ic.setVisible(true);
         } else if (stim == loop_btn){
-        	intCatcherDialog ic = new intCatcherDialog(app_frame, ch, CommandHandler.SLOOP_COM);
+        	IntCatcherDialog ic = new IntCatcherDialog(app_frame, ch, CommandHandler.SLOOP_COM);
         	ic.setVisible(true);
         } else {
-        	dualIntCatcherDialog dic = new dualIntCatcherDialog(app_frame, ch, CommandHandler.RWAIT_COM);
+        	DualIntCatcherDialog dic = new DualIntCatcherDialog(app_frame, ch, CommandHandler.RWAIT_COM);
         	dic.setVisible(true);
         }
     }
@@ -675,6 +682,10 @@ class ParameterCommands extends JPanel implements ActionListener{
 	public void showAdvancedOptions(boolean val) {
 		loop_btn.setVisible(val);
 		rwait_btn.setVisible(val);
+	}
+
+	public void setManualMouseCoords(boolean val) {
+    	this.manual_mmc = val;
 	}
 }
 
@@ -967,21 +978,29 @@ class ExecutionLauncher extends JDialog {
 	}
 }
 
-class keyCatcherDialog extends JDialog implements KeyListener {
+class KeyCatcherDialog extends JDialog implements KeyListener {
     /* A Dialog who's purpose is to wait for and collect a user input key.
-    Meant to be used while defining parameter commands involving key presses.*/
-    private JLabel instruction = new JLabel(" [Press the appropriate key] ");
+    Meant to be used while defining parameter commands involving key presses.
+    Also modified to handle move mouse commands that aren't entered manually.*/
+    private JLabel instruction;
     private CommandHandler ch;
     private String command;
 
-    public keyCatcherDialog(JFrame app_frame, CommandHandler command_handler, String command){
-        super(app_frame, "Key Catcher");
+    public KeyCatcherDialog(JFrame app_frame, CommandHandler command_handler, String command){
+        super(app_frame, "");
         this.ch = command_handler; this.command = command;
         setFocusTraversalKeysEnabled(false);
-        setSize(new Dimension(225, 75));
-        setLayout(new BorderLayout());
+        if (command.equals(CommandHandler.PKEY_COM) || command.equals(CommandHandler.HKEY_COM)) {
+	        setSize(new Dimension(225, 75));
+	        instruction = new JLabel(" [Press the appropriate key] ");
+        } else {
+        	setSize(new Dimension(200, 90));
+        	instruction = new JLabel("<html><div style='text-align: center;'> [Press space with mouse <br/>" +
+			        "in desired destination] </div></html>");
+        }
+        setLayout(new FlowLayout());
         instruction.setFont(new Font(instruction.getFont().getName(), instruction.getFont().getStyle(), 14));
-        add(instruction, BorderLayout.CENTER);
+        add(instruction);
         setLocationRelativeTo(app_frame);
         setResizable(false);
 
@@ -989,9 +1008,17 @@ class keyCatcherDialog extends JDialog implements KeyListener {
     }
 
     public void keyPressed(KeyEvent e) {
-        int KeyInt = e.getKeyCode();
-        ch.addCommand(command, KeyInt);
-        dispose();
+	    int KeyInt = e.getKeyCode();
+    	if (command.equals(CommandHandler.MM_COM) && KeyInt == KeyEvent.VK_SPACE) {
+		    Point point = MouseInfo.getPointerInfo().getLocation();
+		    int x = (int) point.getX();
+		    int y = (int) point.getY();
+		    ch.addCommand(command, x, y);
+		    dispose();
+	    } else if (command.equals(CommandHandler.PKEY_COM) || command.equals(CommandHandler.HKEY_COM)) {
+		    ch.addCommand(command, KeyInt);
+		    dispose();
+	    }
     }
 
 
@@ -1000,7 +1027,7 @@ class keyCatcherDialog extends JDialog implements KeyListener {
     public void keyReleased(KeyEvent e) {}
 }
 
-class intCatcherDialog extends JDialog implements ActionListener{
+class IntCatcherDialog extends JDialog implements ActionListener{
     /* A Dialog who's purpose is to take a user input of a single integer (via input text field).
     Main usage is planned for wait commands (for inputting ms) and loop commands (for inputting no. of loops). */
     private JLabel instruction = new JLabel();
@@ -1009,7 +1036,7 @@ class intCatcherDialog extends JDialog implements ActionListener{
     private CommandHandler ch;
     private String command;
 
-    public intCatcherDialog(JFrame app_frame, CommandHandler command_handler, String command){
+    public IntCatcherDialog(JFrame app_frame, CommandHandler command_handler, String command){
         super(app_frame, "");
         this.ch = command_handler; this.command = command;
         setFocusTraversalKeysEnabled(false);
@@ -1037,7 +1064,7 @@ class intCatcherDialog extends JDialog implements ActionListener{
     }
 }
 
-class dualIntCatcherDialog extends JDialog implements ActionListener{
+class DualIntCatcherDialog extends JDialog implements ActionListener{
     /* A Dialog who's purpose is to take a user input of two integers (via input text fields).
     Main usage is only planned for move mouse command (for getting coords).*/
     private JLabel instruction;
@@ -1049,7 +1076,7 @@ class dualIntCatcherDialog extends JDialog implements ActionListener{
     private CommandHandler ch;
     private String command;
 
-    public dualIntCatcherDialog(JFrame app_frame, CommandHandler command_handler, String command){
+    public DualIntCatcherDialog(JFrame app_frame, CommandHandler command_handler, String command){
         super(app_frame, "");
         this.ch = command_handler; this.command = command;
         setFocusTraversalKeysEnabled(false);
