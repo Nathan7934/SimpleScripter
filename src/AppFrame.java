@@ -532,8 +532,7 @@ class SimpleCommands extends JPanel implements ActionListener{
     private JButton click_btn = new JButton("Left Click");
     private JButton rclick_btn = new JButton("Right Click");
     private JButton dclick_btn = new JButton("Double Click");
-    private JButton copy_btn = new JButton("Copy");
-    private JButton paste_btn = new JButton("Paste");
+    private JButton mclick_btn = new JButton("Middle Click");
     private JButton clickh_btn = new JButton("Hold Click");
 
     private CommandHandler ch;
@@ -558,22 +557,19 @@ class SimpleCommands extends JPanel implements ActionListener{
         dclick_btn.setPreferredSize(size);
         add(dclick_btn, gc);
         gc.gridy = 3;
+        mclick_btn.setPreferredSize(size);
+        add(mclick_btn, gc);
+        gc.gridy = 4;
 	    clickh_btn.setPreferredSize(size);
         add(clickh_btn, gc);
-        gc.gridy = 4;
-	    copy_btn.setPreferredSize(size);
-        add(copy_btn, gc);
-        gc.gridy = 5;
-	    paste_btn.setPreferredSize(size);
-        add(paste_btn, gc);
+
         gc.insets = new Insets(3, 10, 8, 10);
 
         // Add actionListeners
         click_btn.addActionListener(this);
         rclick_btn.addActionListener(this);
         dclick_btn.addActionListener(this);
-        copy_btn.addActionListener(this);
-        paste_btn.addActionListener(this);
+        mclick_btn.addActionListener(this);
         clickh_btn.addActionListener(this);
     }
 
@@ -586,8 +582,7 @@ class SimpleCommands extends JPanel implements ActionListener{
         if(stim == click_btn){ ch.addCommand(CommandHandler.CLICK_COM, -1); }
         else if(stim == rclick_btn){ ch.addCommand(CommandHandler.RCLICK_COM, -1); }
         else if(stim == dclick_btn){ ch.addCommand(CommandHandler.DCLICK_COM, -1); }
-        else if(stim == copy_btn){ ch.addCommand(CommandHandler.COPY_COM, -1); }
-        else if(stim == paste_btn){ ch.addCommand(CommandHandler.PASTE_COM, -1); }
+        else if(stim == mclick_btn){ ch.addCommand(CommandHandler.MCLICK_COM, -1); }
         else{ ch.addCommand(CommandHandler.CLICKH_COM, -1); }
     }
 }

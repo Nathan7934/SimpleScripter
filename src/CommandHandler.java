@@ -14,8 +14,7 @@ public class CommandHandler {
     public static final String CLICK_COM = "Left Click";
     public static final String RCLICK_COM = "Right Click";
     public static final String DCLICK_COM = "Double Click";
-    public static final String COPY_COM = "Copy";
-    public static final String PASTE_COM = "Paste";
+    public static final String MCLICK_COM = "Middle Click";
     public static final String CLICKH_COM = "Hold Click";
     public static final String CLICKR_COM = "Release Click";
     public static final String PKEY_COM = "Press Key ";
@@ -40,8 +39,7 @@ public class CommandHandler {
     public void leftClick() { bot.clickMouse(InputEvent.BUTTON1_DOWN_MASK); }
     public void rightClick() { bot.clickMouse(InputEvent.BUTTON3_DOWN_MASK); }
     public void doubleClick() { bot.doubleClick(InputEvent.BUTTON1_DOWN_MASK); }
-    public void copy() { bot.copy(); }
-    public void paste() { bot.paste(); }
+	public void middleClick() { bot.clickMouse(InputEvent.BUTTON2_DOWN_MASK); }
     public void clickHold() { bot.clickHold(InputEvent.BUTTON1_DOWN_MASK); }
     public void clickRelease() { bot.clickRelease(InputEvent.BUTTON1_DOWN_MASK); }
 
@@ -95,20 +93,17 @@ public class CommandHandler {
         command. */
         switch(command){
             case CLICK_COM:
-                queue.add(new CQItem(command){ public void execute(){ leftClick(); } });
+                queue.add(new CQItem(command) { public void execute(){ leftClick(); } });
                 break;
             case RCLICK_COM:
-                queue.add(new CQItem(command){ public void execute(){ rightClick(); } });
+                queue.add(new CQItem(command) { public void execute(){ rightClick(); } });
                 break;
             case DCLICK_COM:
-                queue.add(new CQItem(command){ public void execute(){ doubleClick(); } });
+                queue.add(new CQItem(command) { public void execute(){ doubleClick(); } });
                 break;
-            case COPY_COM:
-                queue.add(new CQItem(command){ public void execute(){ copy(); } });
-                break;
-            case PASTE_COM:
-                queue.add(new CQItem(command){ public void execute(){ paste(); } });
-                break;
+	        case MCLICK_COM:
+	        	queue.add(new CQItem(command) { public void execute(){ middleClick(); } });
+	        	break;
             case CLICKH_COM:
                 // Since hold click MUST be followed by a release click, we add a release click command as well and
                 // create pointers for each command to each other (allows for synchronized deletion).

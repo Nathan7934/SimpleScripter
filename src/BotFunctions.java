@@ -97,33 +97,6 @@ public class BotFunctions {
         }
     }
 
-    public void copy() {
-        try {
-            robot.keyPress(17); //ctrl
-            robot.delay(150);
-            robot.keyPress(67); //c
-            robot.delay(150);
-            robot.keyRelease(17);
-            robot.keyRelease(67);
-            robot.delay(delay);
-        }catch(Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void paste() {
-        try {
-            robot.keyPress(17); //ctrl
-            robot.delay(150);
-            robot.keyPress(86); //v
-            robot.delay(150);
-            robot.keyRelease(17);
-            robot.keyRelease(86);
-            robot.delay(delay);
-        }catch(Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     public void randomWait(int lower, int upper) {
     	int rwait_time = ThreadLocalRandom.current().nextInt(lower, upper + 1);
