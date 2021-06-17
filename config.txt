@@ -1,0 +1,8 @@
+SET DelayBetweenCommands "300"
+SET ExecutionDelay "3"
+SET MinimizeProgramOnExecution "0"
+SET AutosaveInterval "15"
+SET ShowAdvancedOptions "0"
+SET ManuallyEnterCoordinates "0"
+SET DisplayPointerPosition "1"
+SET DisplayOpenedFileName "1"

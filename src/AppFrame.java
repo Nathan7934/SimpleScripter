@@ -32,15 +32,14 @@ public class AppFrame extends JFrame implements ActionListener{
     // Declaration of settings array indices as constants:
     public static final int INTERCOM_DELAY = 0, EXEC_DELAY = 1, MIN_ON_EXEC = 2, AUTOSAVE_INTERVAL = 3, SHOW_ADVANCED = 4,
     MANUAL_COORDS = 5, DISPLAY_POS = 6, DISPLAY_FILE = 7;
-    private static int[] DEFAULT_SETTINGS = new int[]{300, 3, 0, 15, 0, 0, 0, 1};
+    public static final int[] DEFAULT_SETTINGS = new int[]{300, 3, 0, 15, 0, 0, 1, 1}; // These are the defaults. Order
+	// of settings in array correlates to the order in which the private settings variables are declared in SettingsDialog.
 
     public AppFrame() {
         super("SimpleScripter Prototype");
 
         // Settings configuration
-        this.settings = Arrays.copyOf(DEFAULT_SETTINGS, 8); // These are the defaults. Order of settings in array
-        //  correlates to the order in which the private settings variables are declared in SettingsDialog.
-        // TODO: Make it so that the user's settings persist when the program closes
+        this.settings = FileHandler.readSettingsFromFile();
 
         // UI Configuration
         setVisible(true);
@@ -122,8 +121,8 @@ public class AppFrame extends JFrame implements ActionListener{
 					ch.setMinOnExec(new_settings[MIN_ON_EXEC] == 1);
 					break;
 				case AUTOSAVE_INTERVAL:
+					settings[AUTOSAVE_INTERVAL] = new_settings[AUTOSAVE_INTERVAL];
 					// TODO: Implement
-
 					break;
 				case SHOW_ADVANCED:
 					settings[SHOW_ADVANCED] = new_settings[SHOW_ADVANCED];
@@ -138,11 +137,12 @@ public class AppFrame extends JFrame implements ActionListener{
 					m_info.setVisible(new_settings[DISPLAY_POS] == 1);
 					break;
 				case DISPLAY_FILE:
+					settings[DISPLAY_FILE] = new_settings[DISPLAY_FILE];
 					// TODO: Implement
-
 					break;
 			}
 		}
+		FileHandler.writeSettingsToFile(new_settings);
     }
 
     public int getSettingVal(int index) {
