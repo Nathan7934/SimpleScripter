@@ -1,4 +1,7 @@
+package main;
+
 import org.apache.commons.lang3.StringUtils;
+import queue_items.*;
 
 import java.awt.*;
 import java.awt.event.InputEvent;
@@ -6,7 +9,6 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class CommandHandler {
 
@@ -30,24 +32,12 @@ public class CommandHandler {
 
     private AppFrame app_frame;
     private BotFunctions bot = new BotFunctions();
-    private ArrayList<CQItem> queue = new ArrayList<CQItem>();
-    private Hashtable<Integer, String> keyStrings = new Hashtable<Integer, String>();
-
-    // -------- Leftover from weirdness with interfaces, kept for the sake of faster calling of bot functions ----------
-    // TODO: These probably aren't necessary. Remove later?
-
-    public void leftClick() { bot.clickMouse(InputEvent.BUTTON1_DOWN_MASK); }
-    public void rightClick() { bot.clickMouse(InputEvent.BUTTON3_DOWN_MASK); }
-    public void doubleClick() { bot.doubleClick(InputEvent.BUTTON1_DOWN_MASK); }
-	public void middleClick() { bot.clickMouse(InputEvent.BUTTON2_DOWN_MASK); }
-    public void clickHold() { bot.clickHold(InputEvent.BUTTON1_DOWN_MASK); }
-    public void clickRelease() { bot.clickRelease(InputEvent.BUTTON1_DOWN_MASK); }
-
-    // -----------------------------------------------------------------------------------------------------------------
+    private ArrayList<CQItem> queue = new ArrayList<>();
+    private Hashtable<Integer, String> keyStrings = new Hashtable<>();
 
     public CommandHandler(AppFrame app_frame){
 
-        this.app_frame = app_frame; // Storing reference to AppFrame to make GUI changes when queue is altered.
+        this.app_frame = app_frame; // Storing reference to main.AppFrame to make GUI changes when queue is altered.
 
         // -----------------Adding values to KeyInt to String converter hashtable.--------------------------------------
         keyStrings.put(KeyEvent.VK_Q, "Q"); keyStrings.put(KeyEvent.VK_A, "A"); keyStrings.put(KeyEvent.VK_Z, "Z"); // alphabet
@@ -93,22 +83,22 @@ public class CommandHandler {
         command. */
         switch(command){
             case CLICK_COM:
-                queue.add(new CQItem(command) { public void execute(){ leftClick(); } });
+                queue.add(new CLICKItem(command));
                 break;
             case RCLICK_COM:
-                queue.add(new CQItem(command) { public void execute(){ rightClick(); } });
+                queue.add(new RCLICKItem(command));
                 break;
             case DCLICK_COM:
-                queue.add(new CQItem(command) { public void execute(){ doubleClick(); } });
+                queue.add(new DCLICKItem(command));
                 break;
 	        case MCLICK_COM:
-	        	queue.add(new CQItem(command) { public void execute(){ middleClick(); } });
+	        	queue.add(new MCLICKItem(command));
 	        	break;
             case CLICKH_COM:
                 // Since hold click MUST be followed by a release click, we add a release click command as well and
                 // create pointers for each command to each other (allows for synchronized deletion).
-                CQItem clickHolder = new CQItem(command){ public void execute(){ clickHold(); } };
-                CQItem clickReleaser = new CQItem(CLICKR_COM){ public void execute(){ clickRelease(); } };
+                CQItem clickHolder = new CLICKHItem(command);
+                CQItem clickReleaser = new CLICKRItem(CLICKR_COM);
                 clickHolder.setPointer(clickReleaser);
                 clickReleaser.setPointer(clickHolder);
                 queue.add(clickHolder);
@@ -117,27 +107,12 @@ public class CommandHandler {
                 app_frame.addCommand(CLICKR_COM);
                 break;
             case PKEY_COM:
-                queue.add(new CQItem(command){
-                    private final int key = InfoInt;
-                    public void execute(){
-                        bot.pressKey(this.key);
-                    }
-                } );
+                queue.add(new PKEYItem(command, InfoInt));
                 app_frame.addCommand(command + "(" + keyStrings.get(InfoInt) + ")");
                 break;
             case HKEY_COM:
-                CQItem keyHolder = new CQItem(command){
-                    private final int key = InfoInt;
-                    public void execute(){
-                        bot.holdKey(this.key);
-                    }
-                };
-                CQItem keyReleaser = new CQItem(RKEY_COM){
-                    private final int key = InfoInt;
-                    public void execute(){
-                        bot.releaseKey(this.key);
-                    }
-                };
+                CQItem keyHolder = new HKEYItem(command, InfoInt);
+                CQItem keyReleaser = new RKEYItem(RKEY_COM, InfoInt);
                 keyHolder.setPointer(keyReleaser); // pointers are necessary for synchronized deleting of these paired commands.
                 keyReleaser.setPointer(keyHolder);
                 queue.add(keyHolder);
@@ -147,8 +122,8 @@ public class CommandHandler {
                 break;
 	        case SLOOP_COM:
 	        	String loop_count = String.format("%s %s", command, String.valueOf(InfoInt));
-                CQItem loopStart = new CQItem(loop_count);
-                CQItem loopEnd = new CQItem(ELOOP_COM);
+                CQItem loopStart = new SLOOPItem(loop_count);
+                CQItem loopEnd = new ELOOPItem(ELOOP_COM);
                 loopStart.setPointer(loopEnd);
                 loopEnd.setPointer(loopStart);
                 queue.add(loopStart);
@@ -157,7 +132,7 @@ public class CommandHandler {
                 app_frame.addCommand("} " + ELOOP_COM);
 	        	break;
             case WAIT_COM:
-                queue.add(new CQItem(command){ private final int time = InfoInt; public void execute(){ bot.wait(this.time); } } );
+                queue.add(new WAITItem(command, InfoInt));
                 app_frame.addCommand(command + "(" + InfoInt + ")");
                 break;
         }
@@ -225,22 +200,10 @@ public class CommandHandler {
         potentially handle other future commands that might take two integer parameters.
         Added functionality to include random wait command.*/
         if(command.equals(MM_COM)) {
-            queue.add(new CQItem(command) {
-               private final int x_coord = left;
-               private final int y_coord = right;
-               public void execute(){
-                   bot.moveMouse(this.x_coord, this.y_coord);
-               }
-            });
+            queue.add(new MMItem(command, left, right));
             app_frame.addCommand(String.format("%s(%d,%d)", command, left, right));
         } else if (command.equals(RWAIT_COM)) {
-	        queue.add(new CQItem(command) {
-		        private final int lower = left;
-		        private final int upper = right;
-		        public void execute(){
-			        bot.randomWait(this.lower, this.upper);
-		        }
-	        });
+	        queue.add(new RWAITItem(command, left, right));
 	        app_frame.addCommand(String.format("%s(%d-%d)", command, left, right));
         }
     }
@@ -279,8 +242,8 @@ public class CommandHandler {
     }
 
     public int getPointerIndex(int index) {
-    	/* Return the index of the pointer for the CQItem at <index>. If the
-	       CQItem at <index> does not have a pointer, return -1. */
+    	/* Return the index of the pointer for the queue_items.CQItem at <index>. If the
+	       queue_items.CQItem at <index> does not have a pointer, return -1. */
     	CQItem pointer = queue.get(index).getPointerRef();
     	if (pointer != null) {
 		    return queue.indexOf(pointer);
@@ -315,33 +278,13 @@ public class CommandHandler {
     public void setMinOnExec(boolean val) {
     	this.min_on_exec = val;
     }
-}
 
-class CQItem{
-    // Abstract object type for queue items.
-    private String command;
-    private CQItem pointer; // Pointer ref, only to be set when dealing with pairing commands, such as press key.
-    private boolean has_pointer = false;
+	public void setLoadedQueue(ArrayList<CQItem> new_queue) {
+    	queue.clear();
+		queue.addAll(new_queue);
+	}
 
-    public CQItem(String command){
-        this.command = command;
-    }
-
-    public void execute(){
-        // To be implemented through lambda expressions.
-    }
-
-    public String getCommand(){
-        return command;
-    }
-
-    public void setPointer(CQItem pointer){
-        this.pointer = pointer;
-        has_pointer = true;
-    }
-
-    public CQItem getPointerRef(){
-        if(has_pointer){ return pointer; }
-        else{ return null; }
-    }
+	public ArrayList<CQItem> getQueue() {
+    	return queue;
+	}
 }

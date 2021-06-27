@@ -1,24 +1,26 @@
-import java.awt.Robot;
+package main;
+
+import java.awt.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class BotFunctions {
-    private Robot robot;
+    static Robot robot;
+	static {
+		try {
+			robot = new Robot();
+		} catch (AWTException e) {
+			e.printStackTrace();
+		}
+	}
+	//delay between clicks in ms
+    static int delay = 300;
 
-    //delay between clicks in ms
-    private int delay;
-    public BotFunctions() {
-        try {
-            robot = new Robot();
-        }catch(Exception e) {
-            e.printStackTrace();
-        }
-        delay = 300;
-    }
+	public BotFunctions() {}
 
-    public void clickMouse(int button) {
+    public static void clickMouse(int button) {
         try {
             robot.mousePress(button);
-            robot.delay(250);
+            robot.delay(100);
             robot.mouseRelease(button);
             robot.delay(delay);
         }catch(Exception e) {
@@ -26,7 +28,7 @@ public class BotFunctions {
         }
     }
 
-    public void clickHold(int button) {
+    public static void clickHold(int button) {
         try {
             robot.mousePress(button);
             robot.delay(delay);
@@ -35,7 +37,7 @@ public class BotFunctions {
         }
     }
 
-    public void clickRelease(int button) {
+    public static void clickRelease(int button) {
         try {
             robot.mouseRelease(button);
             robot.delay(delay);
@@ -44,25 +46,25 @@ public class BotFunctions {
         }
     }
 
-    public void doubleClick(int button) {
+    public static void doubleClick(int button) {
         try {
-            robot.mousePress(button);
-            robot.delay(50);
-            robot.mouseRelease(button);
-            robot.delay(50);
             robot.mousePress(button);
             robot.delay(50);
             robot.mouseRelease(button);
+            robot.delay(50);
+            robot.mousePress(button);
+            robot.delay(50);
+            robot.mouseRelease(button);
             robot.delay(delay);
         }catch(Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void pressKey(int keycode) {
+    public static void pressKey(int keycode) {
         try {
             robot.keyPress(keycode);
-            robot.delay(250);
+            robot.delay(100);
             robot.keyRelease(keycode);
             robot.delay(delay);
         }catch(Exception e) {
@@ -70,7 +72,7 @@ public class BotFunctions {
         }
     }
 
-    public void holdKey(int keycode) {
+    public static void holdKey(int keycode) {
         try {
             robot.keyPress(keycode);
             robot.delay(delay);
@@ -79,7 +81,7 @@ public class BotFunctions {
         }
     }
 
-    public void releaseKey(int keycode) {
+    public static void releaseKey(int keycode) {
         try {
             robot.keyRelease(keycode);
             robot.delay(delay);
@@ -88,7 +90,7 @@ public class BotFunctions {
         }
     }
 
-    public void moveMouse(int x, int y) {
+    public static void moveMouse(int x, int y) {
         try {
             robot.mouseMove(x, y);
             robot.delay(delay);
@@ -98,16 +100,16 @@ public class BotFunctions {
     }
 
 
-    public void randomWait(int lower, int upper) {
+    public static void randomWait(int lower, int upper) {
     	int rwait_time = ThreadLocalRandom.current().nextInt(lower, upper + 1);
 		robot.delay(rwait_time);
     }
 
-    public void setDelay(int ms) {
-        this.delay = ms;
+    public static void setDelay(int ms) {
+        delay = ms;
     }
 
-    public void wait(int ms) {
+    public static void wait(int ms) {
         robot.delay(ms);
     }
 }

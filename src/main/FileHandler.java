@@ -1,6 +1,11 @@
-import org.apache.commons.lang3.StringUtils;
+package main;
 
+import org.apache.commons.lang3.StringUtils;
+import queue_items.CQItem;
+
+import javax.swing.*;
 import java.io.*;
+import java.util.ArrayList;
 
 public class FileHandler {
 	/* Class consisting of static methods for file handling. Used as a pipeline for settings data between the program
@@ -43,7 +48,7 @@ public class FileHandler {
 				line = StringUtils.substringBetween(line, "\"");
 				if (StringUtils.isNumeric(line)) {
 					settings[index] = Integer.parseInt(line);
-				} else if (index < AppFrame.DEFAULT_SETTINGS.length){
+				} else if (index < AppFrame.DEFAULT_SETTINGS.length) {
 					// If user changes values by manually editing config.txt - and enters an invalid entry, then the
 					// program will just boot with default settings
 					return AppFrame.DEFAULT_SETTINGS;
@@ -62,5 +67,36 @@ public class FileHandler {
 			}
 		}
 		return settings;
+	}
+
+	public static void serializeCommandQueue(File file, DefaultListModel<ListItem> list_model, ArrayList<CQItem> queue) {
+		try {
+			FileOutputStream fout = new FileOutputStream(file);
+			ObjectOutputStream out = new ObjectOutputStream(fout);
+			out.writeObject(list_model);
+			out.writeObject(queue);
+			out.close();
+			fout.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static DefaultListModel<ListItem> deserializeCommandQueue(File file, CommandHandler ch) {
+		DefaultListModel<ListItem> list_model;
+		ArrayList<CQItem> queue;
+		try {
+			FileInputStream fout = new FileInputStream(file);
+			ObjectInputStream in = new ObjectInputStream(fout);
+			list_model = (DefaultListModel<ListItem>) in.readObject();
+			queue = (ArrayList<CQItem>) in.readObject();
+			in.close();
+			fout.close();
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}
+		ch.setLoadedQueue(queue);
+		return list_model;
 	}
 }

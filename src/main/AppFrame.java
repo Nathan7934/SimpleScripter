@@ -1,3 +1,5 @@
+package main;
+
 import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
@@ -7,12 +9,14 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 
 public class AppFrame extends JFrame implements ActionListener{
     /* The primary GUI frame. Every other component is a sub-component of this frame.
@@ -154,7 +158,7 @@ public class AppFrame extends JFrame implements ActionListener{
 	class MenuList extends JPopupMenu implements ActionListener{
     	private JFrame app_frame;
     	private JMenuItem save = new JMenuItem("Save");
-    	private JMenuItem load = new JMenuItem("Load");
+    	private JMenuItem open = new JMenuItem("Open");
     	private JMenuItem settings = new JMenuItem("Settings");
     	private JMenuItem about = new JMenuItem("About");
     	public static final int WIDTH = 60;
@@ -164,21 +168,39 @@ public class AppFrame extends JFrame implements ActionListener{
     		this.app_frame = app_frame;
     		setPopupSize(WIDTH, HEIGHT);
     		add(save);
-    		add(load);
+    		add(open);
     		add(settings);
     		add(about);
     		save.addActionListener(this);
-    		load.addActionListener(this);
+    		open.addActionListener(this);
     		settings.addActionListener(this);
     		about.addActionListener(this);
 	    }
 
     	public void actionPerformed(ActionEvent e) {
 			JMenuItem stim = (JMenuItem) e.getSource();
+			final JFileChooser fc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+			fc.setAcceptAllFileFilterUsed(false);
+		    FileNameExtensionFilter filter = new FileNameExtensionFilter("SimpleScripter Queue (.ssq)", "ssq");
+		    fc.addChoosableFileFilter(filter);
+		    fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 			if (stim == save) {
-				// TODO: Add save functionality
-			} else if (stim == load) {
-				// TODO: Add load functionality
+				int saveVal = fc.showSaveDialog(app_frame);
+				if (saveVal == JFileChooser.APPROVE_OPTION) {
+					File file = fc.getSelectedFile();
+					if (file == null) { return; }
+					if (!StringUtils.endsWith(file.getName(), ".ssq")) {
+						file = new File(file.getParentFile(), file.getName() + ".ssq");
+					}
+					FileHandler.serializeCommandQueue(file, coms_list.getListModel(), ch.getQueue());
+				}
+			} else if (stim == open) {
+				int loadVal = fc.showOpenDialog(app_frame);
+				File file = fc.getSelectedFile();
+				if (loadVal == JFileChooser.APPROVE_OPTION && file.exists()) {
+					DefaultListModel<ListItem> list_model = FileHandler.deserializeCommandQueue(file, ch);
+					if (list_model != null) { coms_list.setLoadedListModel(list_model); }
+				}
 			} else if (stim == settings) {
 				SettingsDialog od = new SettingsDialog(app_frame);
 				od.setVisible(true);
@@ -525,7 +547,7 @@ public class AppFrame extends JFrame implements ActionListener{
 }
 
 class SimpleCommands extends JPanel implements ActionListener{
-    /* A sub panel of AppFrame. Contains all simple command buttons and handles their click actions.
+    /* A sub panel of main.AppFrame. Contains all simple command buttons and handles their click actions.
      */
 
     // Define panel components
@@ -575,7 +597,7 @@ class SimpleCommands extends JPanel implements ActionListener{
 
     public void actionPerformed(ActionEvent e) {
         /* This frame itself behaves as an action listener. It distinguishes which button is pressed, and adds the
-        correct corresponding command to CommandHandler's queue.
+        correct corresponding command to main.CommandHandler's queue.
         */
         JButton stim = (JButton)e.getSource();
 
@@ -588,8 +610,8 @@ class SimpleCommands extends JPanel implements ActionListener{
 }
 
 class ParameterCommands extends JPanel implements ActionListener{
-    /* A sub panel of AppFrame. Contains all parameter command buttons and handles click actions for them.
-       Creates KeyCatcherDialog boxes for taking in key input parameters.
+    /* A sub panel of main.AppFrame. Contains all parameter command buttons and handles click actions for them.
+       Creates main.KeyCatcherDialog boxes for taking in key input parameters.
      */
 
     private JButton pkey_btn = new JButton("Press Key");
@@ -644,7 +666,7 @@ class ParameterCommands extends JPanel implements ActionListener{
 
     public void actionPerformed(ActionEvent e) {
         /* Similar to simple commands, except the input is taken by dialog boxes. These dialogs are where the commands
-        are sent to CommandHandler.
+        are sent to main.CommandHandler.
         */
         JButton stim = (JButton) e.getSource();
 
@@ -685,7 +707,7 @@ class ParameterCommands extends JPanel implements ActionListener{
 }
 
 class CommandsList extends JPanel implements ActionListener{
-    /* A sub panel of AppFrame that displays the queue list, additionally handles actions on nearby buttons (Execute,
+    /* A sub panel of main.AppFrame that displays the queue list, additionally handles actions on nearby buttons (Execute,
     swap up, swap down, and delete).
      */
 
@@ -695,7 +717,7 @@ class CommandsList extends JPanel implements ActionListener{
     private boolean is_executing = false;
     private int exec_delay;
 
-    private DefaultListModel list_model = new DefaultListModel();
+    private DefaultListModel<ListItem> list_model = new DefaultListModel<>();
     private JList q_lst = new JList(list_model);
     private JLabel title_lbl = new JLabel("Queued Commands");
     private JButton exe_btn = new JButton("Execute");
@@ -813,7 +835,7 @@ class CommandsList extends JPanel implements ActionListener{
     public void swapUp(int index){
         // Swaps element in list model at index <index> with element above it.
         if(index > 0){
-        	ListItem temp = (ListItem) list_model.get(index-1);
+        	ListItem temp = list_model.get(index-1);
             list_model.set(index-1, list_model.get(index));
             list_model.set(index, temp);
             q_lst.setSelectedIndex(index-1);
@@ -826,7 +848,7 @@ class CommandsList extends JPanel implements ActionListener{
     public void swapDown(int index){
         // Swaps element in list model at index <index> with element below it.
         if(index < list_model.size()-1){
-	        ListItem temp = (ListItem) list_model.get(index+1);
+	        ListItem temp = list_model.get(index+1);
             list_model.set(index+1, list_model.get(index));
             list_model.set(index, temp);
             q_lst.setSelectedIndex(index+1);
@@ -837,7 +859,7 @@ class CommandsList extends JPanel implements ActionListener{
     }
 
     public void updatePointed() {
-    	/* Updates the pointer information related to the selected ListItem.
+    	/* Updates the pointer information related to the selected main.ListItem.
     	   This is important for the pair-highlighting functionality between
     	   paired commands (such as loop and hold click). */
 	    if (curr_pointed != null) {
@@ -845,7 +867,7 @@ class CommandsList extends JPanel implements ActionListener{
 	    }
 	    int pointer_index = ch.getPointerIndex(curr_index);
 	    if (pointer_index > -1 && pointer_index < list_model.size()) {
-		    ListItem pointed = (ListItem) list_model.get(pointer_index);
+		    ListItem pointed = list_model.get(pointer_index);
 		    pointed.setPairIsSelected(true);
 		    curr_pointed = pointed;
 	    }
@@ -857,18 +879,18 @@ class CommandsList extends JPanel implements ActionListener{
     	int nested_level = 0;
     	ListItem item;
     	for (int i = 0; i < list_model.size(); i++) {
-    		item = (ListItem) list_model.get(i);
+    		item = list_model.get(i);
     		item.setCommand(item.toString().trim()); // remove previous indent
-			if (item.toString().contains(ch.ELOOP_COM)) {
+			if (item.toString().contains(CommandHandler.ELOOP_COM)) {
 				nested_level--;
 			}
 			String indent = "";
 			for (int j = 0; j < nested_level; j++) {
 				indent = indent + "   ";
 			}
-			item.setCommand(indent + item.toString());
+			item.setCommand(indent + item);
 			list_model.set(i, item);
-		    if (item.toString().contains(ch.SLOOP_COM)) {
+		    if (item.toString().contains(CommandHandler.SLOOP_COM)) {
 			    nested_level++;
 		    }
 	    }
@@ -876,7 +898,7 @@ class CommandsList extends JPanel implements ActionListener{
     }
 
     public void setExecutionIndex (int index) {
-    	/* A method meant to be used during CommandHandler's execution process, selecting the item that is currently
+    	/* A method meant to be used during main.CommandHandler's execution process, selecting the item that is currently
     	executing in the queue. Pass -1 when execution is finished. */
     	if (index < 0 || index >= list_model.size()) {
 		    is_executing = false;
@@ -891,6 +913,17 @@ class CommandsList extends JPanel implements ActionListener{
 
     public void setExecutionDelay(int exec_delay) {
     	this.exec_delay = exec_delay;
+    }
+
+    public void setLoadedListModel(DefaultListModel<ListItem> list) {
+    	list_model.clear();
+    	for (int index = 0; index < list.size(); index++){
+    		list_model.addElement(list.getElementAt(index));
+	    }
+    }
+
+    public DefaultListModel<ListItem> getListModel() {
+    	return list_model;
     }
 
 	class QueueListRenderer extends JLabel implements ListCellRenderer {
@@ -923,28 +956,6 @@ class CommandsList extends JPanel implements ActionListener{
 			setBackground(background);
 			return this;
 		}
-	}
-
-	class ListItem {
-    	// list_model is composed of elements of this type. Used to store additional data.
-    	private String command;
-    	private boolean pairIsSelected;
-    	public ListItem(String command) {
-    		this.command = command;
-    		this.pairIsSelected = false;
-	    }
-	    public void setPairIsSelected(boolean val) {
-    		this.pairIsSelected = val;
-	    }
-	    public void setCommand(String command) {
-		    this.command = command;
-	    }
-	    public boolean getPairIsSelected() {
-    		return this.pairIsSelected;
-	    }
-	    public String toString() {
-    		return command;
-	    }
 	}
 }
 

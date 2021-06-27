@@ -1,4 +1,6 @@
-import javax.swing.*;
+package main;
+
+import main.AppFrame;
 
 public class Application {
 
