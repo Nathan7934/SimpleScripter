@@ -1,4 +1,4 @@
-SET DelayBetweenCommands "300"
+SET DelayBetweenCommands "1"
 SET ExecutionDelay "3"
 SET MinimizeProgramOnExecution "0"
 SET AutosaveInterval "15"

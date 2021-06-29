@@ -23,6 +23,8 @@ public class AppFrame extends JFrame implements ActionListener{
     */
 
     private CommandHandler ch = new CommandHandler(this);
+    public File working_file = null;
+    private Thread autosave_thread = null;
 
     private SimpleCommands simple_coms = new SimpleCommands(ch);
     private ParameterCommands para_coms = new ParameterCommands(ch, this);
@@ -83,11 +85,11 @@ public class AppFrame extends JFrame implements ActionListener{
         coms_list = new CommandsList(ch, this, getSettingVal(EXEC_DELAY));
         add(coms_list, gc);
 
-	    applySettings(this.settings);
-
-        // Start thread that updates mouse position label.
+        // Start thread that updates mouse position label and autosaving thread.
         Thread m_thread = new Thread(new MPThread(m_info));
-        m_thread.start();
+	    m_thread.start();
+
+	    applySettings(this.settings);
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -126,7 +128,11 @@ public class AppFrame extends JFrame implements ActionListener{
 					break;
 				case AUTOSAVE_INTERVAL:
 					settings[AUTOSAVE_INTERVAL] = new_settings[AUTOSAVE_INTERVAL];
-					// TODO: Implement
+					if (autosave_thread != null) {
+						autosave_thread.interrupt();
+					}
+					autosave_thread = new Thread(new AutoSaveTimer(new_settings[AUTOSAVE_INTERVAL]));
+					autosave_thread.start();
 					break;
 				case SHOW_ADVANCED:
 					settings[SHOW_ADVANCED] = new_settings[SHOW_ADVANCED];
@@ -142,7 +148,11 @@ public class AppFrame extends JFrame implements ActionListener{
 					break;
 				case DISPLAY_FILE:
 					settings[DISPLAY_FILE] = new_settings[DISPLAY_FILE];
-					// TODO: Implement
+					if (new_settings[DISPLAY_FILE] == 1 && working_file != null) {
+						coms_list.setTitle(working_file.getName());
+					} else {
+						coms_list.setTitle("Queued Commands");
+					}
 					break;
 			}
 		}
@@ -155,26 +165,28 @@ public class AppFrame extends JFrame implements ActionListener{
         return settings[index];
     }
 
-	class MenuList extends JPopupMenu implements ActionListener{
+	class MenuList extends JPopupMenu implements ActionListener {
+    	/* A menu list containing additional actions including saving, loading, about dialog, and settings. To
+    	instantiate, the user clicks the hamburger icon in the top-left corner. */
     	private JFrame app_frame;
-    	private JMenuItem save = new JMenuItem("Save");
-    	private JMenuItem open = new JMenuItem("Open");
-    	private JMenuItem settings = new JMenuItem("Settings");
-    	private JMenuItem about = new JMenuItem("About");
+    	private JMenuItem save_btn = new JMenuItem("Save");
+    	private JMenuItem open_btn = new JMenuItem("Open");
+    	private JMenuItem settings_btn = new JMenuItem("Settings");
+    	private JMenuItem about_btn = new JMenuItem("About");
     	public static final int WIDTH = 60;
     	public static final int HEIGHT = 80;
 
     	public MenuList(JFrame app_frame) {
     		this.app_frame = app_frame;
     		setPopupSize(WIDTH, HEIGHT);
-    		add(save);
-    		add(open);
-    		add(settings);
-    		add(about);
-    		save.addActionListener(this);
-    		open.addActionListener(this);
-    		settings.addActionListener(this);
-    		about.addActionListener(this);
+    		add(save_btn);
+    		add(open_btn);
+    		add(settings_btn);
+    		add(about_btn);
+    		save_btn.addActionListener(this);
+    		open_btn.addActionListener(this);
+    		settings_btn.addActionListener(this);
+    		about_btn.addActionListener(this);
 	    }
 
     	public void actionPerformed(ActionEvent e) {
@@ -184,7 +196,7 @@ public class AppFrame extends JFrame implements ActionListener{
 		    FileNameExtensionFilter filter = new FileNameExtensionFilter("SimpleScripter Queue (.ssq)", "ssq");
 		    fc.addChoosableFileFilter(filter);
 		    fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-			if (stim == save) {
+			if (stim == save_btn) {
 				int saveVal = fc.showSaveDialog(app_frame);
 				if (saveVal == JFileChooser.APPROVE_OPTION) {
 					File file = fc.getSelectedFile();
@@ -193,15 +205,23 @@ public class AppFrame extends JFrame implements ActionListener{
 						file = new File(file.getParentFile(), file.getName() + ".ssq");
 					}
 					FileHandler.serializeCommandQueue(file, coms_list.getListModel(), ch.getQueue());
+					working_file = file;
+					if (settings[DISPLAY_FILE] == 1) {
+						coms_list.setTitle(file.getName());
+					}
 				}
-			} else if (stim == open) {
+			} else if (stim == open_btn) {
 				int loadVal = fc.showOpenDialog(app_frame);
 				File file = fc.getSelectedFile();
 				if (loadVal == JFileChooser.APPROVE_OPTION && file.exists()) {
 					DefaultListModel<ListItem> list_model = FileHandler.deserializeCommandQueue(file, ch);
 					if (list_model != null) { coms_list.setLoadedListModel(list_model); }
+					working_file = file;
+					if (settings[DISPLAY_FILE] == 1) {
+						coms_list.setTitle(file.getName());
+					}
 				}
-			} else if (stim == settings) {
+			} else if (stim == settings_btn) {
 				SettingsDialog od = new SettingsDialog(app_frame);
 				od.setVisible(true);
 			} else {
@@ -211,7 +231,7 @@ public class AppFrame extends JFrame implements ActionListener{
 	    }
 	}
 
-	class AboutDialog extends JDialog {
+	static class AboutDialog extends JDialog {
     	/* A dialog window that appears when the user clicks the "about" option in the menu dropdown. Displays a
     	brief description of the program along with a hyperlink to the source code repository. */
     	public AboutDialog(JFrame app_frame) {
@@ -543,6 +563,27 @@ public class AppFrame extends JFrame implements ActionListener{
 	            if (sd.isMonitoring()) { apply.setEnabled(true); }
             }
         }
+	}
+
+	class AutoSaveTimer implements Runnable {
+    	private int autosave_interval;
+    	public AutoSaveTimer(int autosave_interval) {
+    		this.autosave_interval = autosave_interval;
+	    }
+		public void run() {
+    		if (autosave_interval > 0) {
+			    while (true) {
+				    try {
+					    Thread.sleep(60000L * autosave_interval);
+				    } catch (InterruptedException e) {
+					    return;
+				    }
+				    if (working_file != null) {
+					    FileHandler.serializeCommandQueue(working_file, coms_list.getListModel(), ch.getQueue());
+				    }
+			    }
+		    }
+		}
 	}
 }
 
@@ -920,6 +961,13 @@ class CommandsList extends JPanel implements ActionListener{
     	for (int index = 0; index < list.size(); index++){
     		list_model.addElement(list.getElementAt(index));
 	    }
+    }
+
+    public void setTitle(String new_title) {
+    	if (new_title.length() > 15) {
+    		new_title = StringUtils.substringBefore(new_title.substring(0, 18), ".") + "...ssq";
+	    }
+    	title_lbl.setText(new_title);
     }
 
     public DefaultListModel<ListItem> getListModel() {
